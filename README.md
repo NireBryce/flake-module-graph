@@ -55,11 +55,11 @@ same way, alphabetically. A TOML file says which areas belong where:
 ```toml
 # module-graph.toml
 [layout]
-top    = ["host-config", "users-config"]   # Mermaid/Graphviz hosts view: above the hosts
-behind = ["host-config"]                   # page: before the hosts
-beside = ["homelab-config"]                # page: next to the hosts
-far    = ["users-config"]                  # page: the far end, past the shared areas
-shared = ["general-config", "packages-config"]   # page: these first, in this order
+top    = ["hosts", "users"]        # Mermaid/Graphviz hosts view: above the hosts
+behind = ["hosts"]                 # page: before the hosts
+beside = ["services"]              # page: next to the hosts
+far    = ["users"]                 # page: the far end, past the shared areas
+shared = ["shared", "packages"]    # page: these first, in this order
 ```
 
 ```sh

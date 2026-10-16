@@ -5,11 +5,11 @@ Placement is per repository, so it comes from a TOML file (--config), and
 with none every area is a shared area in alphabetical order:
 
     [layout]
-    top    = ["host-config", "users-config"]   # static diagrams: drawn above the hosts
-    behind = ["host-config"]                   # page: before the hosts
-    beside = ["homelab-config"]                # page: next to the hosts
-    far    = ["users-config"]                  # page: the far end, past the shared areas
-    shared = ["general-config", "packages-config"]   # page: these first, in this order
+    top    = ["hosts", "users"]        # static diagrams: drawn above the hosts
+    behind = ["hosts"]                 # page: before the hosts
+    beside = ["services"]              # page: next to the hosts
+    far    = ["users"]                 # page: the far end, past the shared areas
+    shared = ["shared", "packages"]    # page: these first, in this order
 """
 import tomllib
 from dataclasses import dataclass, field

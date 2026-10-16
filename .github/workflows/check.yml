@@ -12,13 +12,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
       - run: nix flake check
-  page:
+  preflight:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - name: the page in headless Chromium
-        run: nix shell nixpkgs#chromium --command python3 tests/browser.py
+      - name: just preflight (unit tests, the page in headless Chromium, flake check)
+        run: nix develop --command just preflight
       - name: end to end with the graph dirs-as-categories publishes
         run: |
           nix eval --json 'github:NireBryce/dirs-as-categories#tests.main' --apply 'm: m.graph' > graph.json

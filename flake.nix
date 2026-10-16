@@ -31,6 +31,15 @@
                 };
             });
 
+            # `nix develop`: what the recipes in justfile need. Chromium only
+            # where nixpkgs builds it, for `just browser`.
+            devShells = forAll (pkgs: {
+                default = pkgs.mkShell {
+                    packages = with pkgs; [ just python3 graphviz ]
+                        ++ lib.optional pkgs.stdenv.hostPlatform.isLinux chromium;
+                };
+            });
+
             checks = forAll (pkgs: {
                 tests = pkgs.runCommand "module-graph-tests" { nativeBuildInputs = [ pkgs.python3 ]; } ''
                     cp -r ${tests} src && chmod -R u+w src && cd src
