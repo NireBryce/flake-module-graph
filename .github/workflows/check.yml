@@ -1,0 +1,26 @@
+name: check
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: nix flake check
+  page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: the page in headless Chromium
+        run: nix shell nixpkgs#chromium --command python3 tests/browser.py
+      - name: end to end with category-tree's published graph
+        run: |
+          nix eval --json 'github:NireBryce/category-tree#tests.main' --apply 'm: m.graph' > graph.json
+          nix run . -- hosts graph.json | grep -q 'enables'
+          nix run . -- html graph.json | grep -q '"title":"hm-agg"'

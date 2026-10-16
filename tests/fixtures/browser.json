@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "classes": ["nixos", "homeManager", "darwin"],
+  "categories": {
+    "alpha":  { "dir": "host-config/alpha",   "members": ["hw"],     "nested": [],      "flag": null },
+    "beta":   { "dir": "host-config/beta",    "members": ["fw"],     "nested": [],      "flag": null },
+    "base":   { "dir": "shared/base",         "members": ["locale", "turn-on"], "nested": ["net"], "flag": null },
+    "net":    { "dir": "shared/base/net",     "members": ["ssh"],    "nested": [],      "flag": null },
+    "extras": { "dir": "shared/extras",       "members": ["games"],  "nested": [],      "flag": null },
+    "lonely": { "dir": "shared/lonely",       "members": ["unused"], "nested": [],      "flag": null },
+    "me":     { "dir": "users/me",            "members": ["shell"],  "nested": [],      "flag": null }
+  },
+  "folders": [],
+  "modules": {
+    "hw":       { "path": "host-config/alpha/hw.nix",       "classes": ["nixos"] },
+    "fw":       { "path": "host-config/beta/fw.nix",        "classes": ["nixos"] },
+    "locale":   { "path": "shared/base/locale.nix",         "classes": ["nixos"] },
+    "turn-on":  { "path": "shared/base/turn-on.nix",        "classes": ["nixos"] },
+    "ssh":      { "path": "shared/base/net/ssh.nix",        "classes": ["nixos"] },
+    "games":    { "path": "shared/extras/games.nix",        "classes": ["nixos"] },
+    "unused":   { "path": "shared/lonely/unused.nix",       "classes": ["nixos"] },
+    "shell":    { "path": "users/me/shell.nix",             "classes": ["homeManager"] },
+    "alpha-host": { "path": "hosts/alpha-host.nix",         "classes": ["nixos"] },
+    "beta-host":  { "path": "hosts/beta-host.nix",          "classes": ["nixos"] },
+    "home":       { "path": "hosts/home.nix",               "classes": ["homeManager"] }
+  },
+  "includes": {
+    "alpha-host": { "nixos": ["alpha", "base", "extras"] },
+    "beta-host":  { "nixos": ["beta", "net"] },
+    "home":       { "homeManager": ["me"] }
+  },
+  "enables": { "turn-on": { "homeManager": ["home"] } },
+  "defaults": [],
+  "admin": []
+}

@@ -1,0 +1,48 @@
+{
+    description = "Draw a flake's modules tree: Mermaid, Graphviz, and an interactive page";
+
+    inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    outputs = { self, nixpkgs }:
+        let
+            inherit (nixpkgs) lib;
+            systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+            forAll  = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+
+            src   = lib.fileset.toSource { root = ./.; fileset = ./module_graph; };
+            tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [ ./module_graph ./tests ]; };
+        in
+        {
+            packages = forAll (pkgs: rec {
+                # Python stdlib only. `--flake` runs the `nix` already on PATH.
+                module-graph = pkgs.writeShellApplication {
+                    name          = "module-graph";
+                    runtimeInputs = [ pkgs.python3 ];
+                    text          = ''PYTHONSAFEPATH=1 PYTHONPATH=${src} exec python3 -m module_graph "$@"'';
+                };
+                default = module-graph;
+            });
+
+            apps = forAll (pkgs: {
+                default = {
+                    type    = "app";
+                    program = lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+                    meta.description = "Draw a flake's modules tree from a module-graph document";
+                };
+            });
+
+            checks = forAll (pkgs: {
+                tests = pkgs.runCommand "module-graph-tests" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+                    cp -r ${tests} src && chmod -R u+w src && cd src
+                    python3 -m unittest discover -s tests
+                    touch $out
+                '';
+                # the packaged command, on the browser fixture
+                package = pkgs.runCommand "module-graph-package" { } ''
+                    ${lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.default} \
+                        hosts ${./tests/fixtures/browser.json} > $out
+                    grep -q 'flowchart TB' $out
+                '';
+            });
+        };
+}

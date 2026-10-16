@@ -1,0 +1,614 @@
+<!doctype html>
+<!--
+  Template for `module-graph html`: an interactive hosts view of a modules
+  tree. page.py replaces the DATA placeholder below with the model as JSON
+  (page_data()); everything else here is static. No external scripts or
+  stylesheets, so the generated file works offline.
+
+  The flow, in either direction (top-down, or left to right):
+
+    behind  ->  hosts  ->  shared areas  <-  homes  ->  far
+                beside
+
+  Where each area goes comes from the layout file (--config): `behind` areas
+  before the hosts, `beside` areas next to them (an edge into something
+  beside its host runs sideways), `shared` areas side by side in the given
+  order, and `far` areas at the far end, past the shared areas. Homes --
+  aggregates a host enables, such as a Home Manager configuration -- sit at
+  the far end too, and their imports run back into the shared areas
+  (bottom-up, or right to left). A host's links out to the far end route
+  around the outside of the graph -- the first half of the hosts over the
+  top (or down the left), the rest under the bottom (or the right) --
+  instead of through the middle. A host does not import a home: a module it
+  reaches enables it, drawn as a dashed "enables" edge.
+
+  Layout is CSS (flex rows or columns); an SVG layer draws the edges between
+  the cards' live positions. An edge runs forward or backward by where its
+  ends actually are, so one that points against the flow bends the other
+  way. Clicking a host or home card toggles it; with any selected, only what
+  they reach is shown -- what they import, everything inside a category they
+  import, and for a host, the homes it enables and what those reach. The
+  selection and layout live in the URL hash (#hosts=my-host&layout=lr).
+
+  After every change the page writes what it shows into <body data-...>
+  (selected cards, visible nodes, drawn edges), which tests/browser.py reads
+  from a headless browser's DOM.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module graph</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1e293b; --quiet: #64748b;
+    --area-bg: #f8fafc; --area-line: #cbd5e1;
+    --entry-bg: #fefce8; --entry-line: #fde68a;
+    --button-bg: #ffffff; --button-line: #cbd5e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f172a; --text: #e2e8f0; --quiet: #94a3b8;
+      --area-bg: #1e293b; --area-line: #334155;
+      --entry-bg: #292412; --entry-line: #854d0e;
+      --button-bg: #1e293b; --button-line: #475569;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f172a; --text: #e2e8f0; --quiet: #94a3b8;
+    --area-bg: #1e293b; --area-line: #334155;
+    --entry-bg: #292412; --entry-line: #854d0e;
+    --button-bg: #1e293b; --button-line: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.35 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 16px; display: flex; flex-wrap: wrap; gap: 8px 16px;
+    align-items: center;
+  }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  .hint { color: var(--quiet); font-size: 13px; }
+  header button {
+    font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px;
+    background: var(--button-bg); color: var(--text);
+    border: 1px solid var(--button-line); cursor: pointer;
+  }
+  #all[aria-pressed="true"] { border-color: var(--quiet); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--quiet); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 18px; height: 12px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+  .dash { width: 22px; border-top: 2px dashed var(--quiet); display: inline-block; }
+
+  #stage { position: relative; padding: 4px 80px 48px; }
+  /* Stacking: the edge layer sits above the area and box backgrounds but
+     below the cards (z-index 1 vs 2), so a line visibly runs across a box
+     to the card it ends on instead of disappearing behind the box. Areas
+     and boxes must not get a z-index of their own: that would make them
+     stacking contexts and put their cards back under the edges. */
+  #edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 1; }
+  #edges path { fill: none; stroke-width: 1.6; opacity: .62; transition: opacity .15s; }
+  #edges path.enables { stroke-dasharray: 6 4; }
+  #edges.focus path { opacity: .08; }
+  #edges.focus path.hot { opacity: .95; stroke-width: 2.2; }
+
+  /* Top-down: five rows, in flow order. */
+  .row {
+    position: relative; display: flex; flex-wrap: wrap; gap: 16px;
+    justify-content: center; align-items: flex-start; margin: 0 0 64px;
+  }
+  .row:last-child { margin-bottom: 0; }
+  /* homelab-config beside the hosts: before them in their row top-down,
+     after them in their column left to right. */
+  #hosts > .area { order: -1; }
+  #stage.lr #hosts > .area { order: 1; }
+  /* The shared areas sit side by side across the flow, in their order, so
+     each faces the hosts directly instead of the later ones sitting behind
+     the earlier: one row top-down (wrapping only on a narrow screen), one
+     column left to right. */
+  #shared { flex-wrap: nowrap; }
+  @media (max-width: 900px) { #shared { flex-wrap: wrap; } }
+  /* Left to right: five columns, each stacking its boxes vertically. The
+     hosts' own directories, the hosts and the user directory stack so each
+     sits across from what it links to instead of in a row that every edge
+     has to pass under. The padding is room for the lanes that route around
+     the outside. */
+  #stage.lr {
+    display: grid; grid-template-columns: repeat(5, auto); column-gap: 88px;
+    justify-content: center; align-items: center; padding: 72px 16px;
+  }
+  #stage.lr .row { flex-direction: column; flex-wrap: nowrap; margin: 0; }
+  #stage.lr #behind .area > .body,
+  #stage.lr #user .area > .body,
+  #stage.lr .entry > .body { flex-direction: column; align-items: stretch; }
+  .area {
+    position: relative; background: var(--area-bg); border: 1px solid var(--area-line);
+    border-radius: 12px; padding: 24px 12px 12px;
+  }
+  .area > .label, .entry > .label {
+    position: absolute; top: 5px; left: 0; right: 0; text-align: center;
+    font-size: 12px; color: var(--quiet);
+  }
+  .entry {
+    position: relative; background: var(--entry-bg); border: 1px solid var(--entry-line);
+    border-radius: 12px; padding: 24px 12px 12px;
+  }
+  .body {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    align-items: flex-start; max-width: calc(5 * 138px + 4 * 10px);
+  }
+  .entry > .body { max-width: none; }
+  .box { border-radius: 12px; border: 1.5px solid; padding: 6px 10px 10px; color: #1e293b; }
+  .box > .head { position: relative; z-index: 2; display: flex; gap: 8px; align-items: baseline; justify-content: center; margin-bottom: 6px; }
+  .box > .head .t { font-weight: 650; }
+  .card {
+    position: relative; z-index: 2;
+    min-width: 112px; padding: 6px 12px 5px; border-radius: 10px; border: 1.5px solid;
+    text-align: center; color: #1e293b;
+  }
+  .card .t, .host .t { font-weight: 600; }
+  .s { font-size: 11px; color: #64748b; font-style: italic; }
+  .folder { border-radius: 3px; }
+  .dashed { border-style: dashed !important; }
+  .alert { border-width: 2.5px !important; }
+  .dots { display: flex; gap: 3px; justify-content: center; min-height: 7px; margin-top: 3px; }
+  .box > .head .dots { margin-top: 0; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  .host {
+    position: relative; z-index: 2;
+    font: inherit; cursor: pointer; padding: 7px 14px 6px; border-radius: 10px;
+    border: 2px solid; background: #ffffff; color: #1e293b; text-align: center;
+    transition: opacity .2s, background-color .2s;
+  }
+  .host:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .host.off { opacity: .45; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { #edges path, .host { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Module graph</h1>
+  <button id="all" type="button" aria-pressed="true">All hosts</button>
+  <button id="layout" type="button">Left to right</button>
+  <span class="hint">Click hosts to show only what they import.</span>
+  <div class="legend" id="legend"></div>
+</header>
+<div id="stage">
+  <svg id="edges" aria-hidden="true"><defs id="markers"></defs><g id="paths"></g></svg>
+  <div class="row" id="behind"></div>
+  <div class="row" id="hosts"></div>
+  <div class="row" id="shared"></div>
+  <div class="row" id="home"></div>
+  <div class="row" id="user"></div>
+</div>
+<script>
+"use strict";
+const DATA = /*@DATA@*/null;
+const S = DATA.style;
+
+// ── the model, indexed ──────────────────────────────────────────────────────
+// "Sources" are the clickable cards: the hosts, and the Home Manager configs
+// ("homes") they enable. Everything else is a node in an area's tree.
+const sources = [...DATA.hosts, ...DATA.homes];
+const sourceById = new Map(sources.map(s => [s.id, s]));
+const byId = new Map(), parentOf = new Map();
+function index(node, parent) {
+  byId.set(node.id, node);
+  if (parent) parentOf.set(node.id, parent.id);
+  for (const child of node.children || []) index(child, node);
+}
+for (const area of DATA.areas) index(area, null);
+
+function withDescendants(id, into) {
+  into.add(id);
+  for (const child of byId.get(id).children || []) withDescendants(child.id, into);
+  return into;
+}
+function directReach(id) {
+  const reached = new Set();
+  for (const target of DATA.imports[id] || []) {
+    if (byId.has(target)) withDescendants(target, reached);
+  }
+  return reached;
+}
+// What each source reaches: what it imports, everything inside it, and for
+// a host, each home it enables and everything that home reaches.
+const reachOf = new Map();
+for (const home of DATA.homes) reachOf.set(home.id, directReach(home.id));
+for (const host of DATA.hosts) {
+  const reached = directReach(host.id);
+  for (const home of DATA.enables[host.id] || []) {
+    reached.add(home);
+    for (const id of reachOf.get(home) || directReach(home)) reached.add(id);
+  }
+  reachOf.set(host.id, reached);
+}
+const sourceByTitle = new Map(sources.map(s => [s.title, s.id]));
+
+// ── building the page once ──────────────────────────────────────────────────
+const els = new Map(), sourceEls = new Map(), dotEls = new Map();
+
+function div(cls, parent, text) {
+  const el = document.createElement("div");
+  if (cls) el.className = cls;
+  if (text !== undefined) el.textContent = text;
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function looks(node) {
+  // [fill, outline, extra classes] by the colour standard (module-graph.py PALETTE)
+  if (node.kind === "missing") return [...S.palette.missing, []];
+  const alert = node.merges || node.status === "orphan";
+  const [fill, line] = alert ? S.alert : S.palette[node.kind];
+  const extra = [];
+  if (alert) extra.push("alert");
+  if (node.status === "by-module") extra.push("dashed");
+  return [node.children && node.kind === "category" ? (alert ? S.alert[0] : S.boxFill) : fill, line, extra];
+}
+function build(node, parent) {
+  let el, inner;
+  if (node.kind === "area") {
+    el = div("area", parent);
+    div("label", el, node.title);
+    inner = div("body", el);
+  } else if (node.children) {
+    const [fill, line, extra] = looks(node);
+    el = div(["box", ...extra].join(" "), parent);
+    el.style.background = fill; el.style.borderColor = line;
+    const head = div("head", el);
+    div("t", head, node.title);
+    if (node.sub) div("s", head, node.sub);
+    dotEls.set(node.id, div("dots", head));
+    inner = div("body", el);
+  } else {
+    const [fill, line, extra] = looks(node);
+    el = div(["card", node.kind === "folder" ? "folder" : "", ...extra].join(" ").trim(), parent);
+    el.style.background = fill; el.style.borderColor = line;
+    div("t", el, node.title);
+    if (node.sub) div("s", el, node.sub);
+    dotEls.set(node.id, div("dots", el));
+  }
+  el.dataset.id = node.id;
+  els.set(node.id, el);
+  for (const child of node.children || []) build(child, inner);
+}
+function sourceGroup(parent, label, list, id) {
+  if (!list.length) return;
+  const box = div("entry", parent);
+  div("label", box, label);
+  const body = div("body", box);
+  for (const source of list) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "host"; b.dataset.id = source.id;
+    b.style.borderColor = source.hue;
+    div("t", b, source.title); div("s", b, source.sub);
+    b.addEventListener("click", () => toggle(source.id));
+    b.addEventListener("mouseenter", () => focusSource(source.id));
+    b.addEventListener("mouseleave", () => focusSource(null));
+    b.addEventListener("focus", () => focusSource(source.id));
+    b.addEventListener("blur", () => focusSource(null));
+    body.appendChild(b);
+    sourceEls.set(source.id, b);
+    els.set(source.id, b);
+  }
+  els.set(id, box);
+}
+const rows = Object.fromEntries(["behind", "hosts", "shared", "home", "user"]
+  .map(id => [id, document.getElementById(id)]));
+for (const area of DATA.areas.filter(a => a.place === "behind")) build(area, rows.behind);
+sourceGroup(rows.hosts, "hosts", DATA.hosts, "grp:hosts");
+for (const area of DATA.areas.filter(a => a.place === "beside")) build(area, rows.hosts);
+for (const area of DATA.areas.filter(a => a.place === "shared")) build(area, rows.shared);
+sourceGroup(rows.home, "home", DATA.homes, "grp:homes");
+for (const area of DATA.areas.filter(a => a.place === "user")) build(area, rows.user);
+// The far end: the user's own directory and the homes. A host's link out
+// to any of it routes around the graph rather than through it.
+const farIds = new Set(DATA.homes.map(h => h.id));
+for (const area of DATA.areas.filter(a => a.place === "user")) withDescendants(area.id, farIds);
+const hostIds = new Set(DATA.hosts.map(h => h.id));
+
+const legend = document.getElementById("legend");
+for (const [label, fill, line, cls] of [
+  ["importable category", S.palette.category[0], S.palette.category[1], ""],
+  ["category holding categories", S.boxFill, S.palette.category[1], ""],
+  ["module", S.palette.module[0], S.palette.module[1], ""],
+  ["no host imports it", S.alert[0], S.alert[1], "alert"],
+]) {
+  const item = document.createElement("span");
+  const sw = document.createElement("i");
+  sw.className = "swatch " + cls; sw.style.background = fill; sw.style.borderColor = line;
+  item.append(sw, label); legend.appendChild(item);
+}
+const enablesNote = document.createElement("span");
+const dash = document.createElement("i"); dash.className = "dash";
+enablesNote.append(dash, "enables (a module it imports turns it on)");
+legend.appendChild(enablesNote);
+const dotsNote = document.createElement("span");
+dotsNote.textContent = "dots: what reaches it";
+legend.appendChild(dotsNote);
+
+// ── markers: one arrowhead per source colour ────────────────────────────────
+const SVG = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("edges"), pathsG = document.getElementById("paths");
+const markers = document.getElementById("markers");
+sources.forEach((source, k) => {
+  const m = document.createElementNS(SVG, "marker");
+  m.id = "arrow-" + k;
+  m.setAttribute("viewBox", "0 0 10 10"); m.setAttribute("refX", "9"); m.setAttribute("refY", "5");
+  m.setAttribute("markerWidth", "7"); m.setAttribute("markerHeight", "7");
+  m.setAttribute("orient", "auto-start-reverse");
+  const p = document.createElementNS(SVG, "path");
+  p.setAttribute("d", "M0,0 L10,5 L0,10 z"); p.setAttribute("fill", source.hue);
+  m.appendChild(p); markers.appendChild(m);
+});
+
+// ── state ───────────────────────────────────────────────────────────────────
+const selected = new Set();
+let visible = new Set();
+let leftToRight = false;
+const stageEl = document.getElementById("stage"), layoutButton = document.getElementById("layout");
+function setLayout(lr) {
+  leftToRight = lr;
+  stageEl.classList.toggle("lr", lr);
+  layoutButton.textContent = lr ? "Top to bottom" : "Left to right";
+}
+function readHash() {
+  selected.clear();
+  setLayout(/(^#|&)layout=lr(&|$)/.test(location.hash));
+  const m = location.hash.match(/hosts=([^&]*)/);
+  if (!m) return;
+  for (const title of decodeURIComponent(m[1]).split(",")) {
+    const id = sourceByTitle.get(title);
+    if (id) selected.add(id);
+  }
+}
+function writeHash() {
+  const titles = sources.filter(s => selected.has(s.id)).map(s => s.title);
+  const parts = [];
+  if (titles.length) parts.push("hosts=" + titles.join(","));
+  if (leftToRight) parts.push("layout=lr");
+  history.replaceState(null, "", parts.length ? "#" + parts.join("&") : location.pathname);
+}
+function toggle(id) {
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  writeHash(); apply(true);
+}
+document.getElementById("all").addEventListener("click", () => {
+  selected.clear(); writeHash(); apply(true);
+});
+layoutButton.addEventListener("click", () => {
+  const before = rects();
+  setLayout(!leftToRight); writeHash(); play(before);
+});
+window.addEventListener("hashchange", () => { readHash(); apply(true); });
+
+// Sources whose edges are drawn: everything with nothing selected; else the
+// selected ones and the homes the selected hosts enable.
+function activeSources() {
+  if (!selected.size) return sources;
+  const ids = new Set(selected);
+  for (const id of selected) for (const home of DATA.enables[id] || []) ids.add(home);
+  return sources.filter(s => ids.has(s.id));
+}
+// Sources a card's dots stand for: the selected ones, else all of them.
+function dotSources() {
+  return selected.size ? sources.filter(s => selected.has(s.id)) : sources;
+}
+function computeVisible() {
+  const out = new Set();
+  if (!selected.size) { for (const id of byId.keys()) out.add(id); return out; }
+  for (const id of selected) for (const reached of reachOf.get(id)) if (byId.has(reached)) out.add(reached);
+  for (const id of [...out]) {
+    for (let p = parentOf.get(id); p; p = parentOf.get(p)) out.add(p);
+  }
+  return out;
+}
+
+// ── applying a selection, with FLIP animation ───────────────────────────────
+function rects() {
+  const m = new Map();
+  for (const [id, el] of els) if (!el.classList.contains("hidden")) m.set(id, el.getBoundingClientRect());
+  return m;
+}
+function animatedParent(el) {
+  const p = el.parentElement && el.parentElement.closest("[data-id]");
+  return p ? p.dataset.id : null;
+}
+// A source's hue mixed with white: an opaque light tint, so a selected card
+// stays light with dark text on a dark page too (a translucent hue over the
+// dark background turned dark and hid the text).
+function tint(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = c => Math.round(255 - (255 - c) * amount);
+  return `rgb(${mix(n >> 16 & 255)}, ${mix(n >> 8 & 255)}, ${mix(n & 255)})`;
+}
+function apply(animate) {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const before = animate && !reduced ? rects() : null;
+  visible = computeVisible();
+  for (const [id, el] of els) {
+    if (byId.has(id)) el.classList.toggle("hidden", !visible.has(id));
+  }
+  const active = new Set(activeSources().map(s => s.id));
+  for (const [id, b] of sourceEls) {
+    b.setAttribute("aria-pressed", String(selected.has(id)));
+    b.classList.toggle("off", selected.size > 0 && !active.has(id));
+    b.style.background = selected.has(id) ? tint(sourceById.get(id).hue, 0.2) : "#ffffff";
+  }
+  document.getElementById("all").setAttribute("aria-pressed", String(selected.size === 0));
+  const dotted = dotSources();
+  for (const [id, dots] of dotEls) {
+    dots.replaceChildren();
+    for (const source of dotted) {
+      if (!reachOf.get(source.id).has(id)) continue;
+      const d = div("dot", dots); d.style.background = source.hue; d.title = source.title;
+    }
+  }
+  if (before) play(before); else drawEdges();
+  document.body.dataset.selected = sources.filter(s => selected.has(s.id)).map(s => s.title).join(",");
+  document.body.dataset.visible = String([...visible].filter(id => byId.get(id).kind !== "area").length);
+}
+function play(before) {
+  const after = rects();
+  for (const [id, el] of els) {
+    const now = after.get(id);
+    if (!now) continue;
+    const was = before.get(id);
+    if (!was) {
+      el.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }],
+                 { duration: 260, easing: "ease-out" });
+      continue;
+    }
+    // Relative to the nearest animated ancestor, so a card inside a moving
+    // box is not moved twice.
+    const p = animatedParent(el);
+    const pBefore = p && before.get(p), pAfter = p && after.get(p);
+    const dx = (was.left - (pBefore ? pBefore.left : 0)) - (now.left - (pAfter ? pAfter.left : 0));
+    const dy = (was.top - (pBefore ? pBefore.top : 0)) - (now.top - (pAfter ? pAfter.top : 0));
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
+    el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
+               { duration: 360, easing: "cubic-bezier(.2,.7,.2,1)" });
+  }
+  const until = performance.now() + 420;
+  (function frame() { drawEdges(); if (performance.now() < until) requestAnimationFrame(frame); })();
+}
+
+// ── edges ───────────────────────────────────────────────────────────────────
+// Forward or backward by where the two ends actually are along the flow:
+// forward leaves the source's far side for the target's near side; backward
+// (a host into its own directory, Home Manager into the user directory it
+// imports) leaves the near side for the target's far side.
+function edgePath(a, b, stage) {
+  // Beside: the two ends share a band across the flow (homelab-config next
+  // to the hosts), so the edge runs sideways between them.
+  const besideTB = !leftToRight && b.bottom > a.top && b.top < a.bottom;
+  const besideLR = leftToRight && b.right > a.left && b.left < a.right;
+  if (besideTB) {
+    const left = b.left + b.width / 2 < a.left + a.width / 2;
+    const x1 = (left ? a.left : a.right) - stage.left, x2 = (left ? b.right : b.left) - stage.left;
+    const y1 = a.top + a.height / 2 - stage.top, y2 = b.top + b.height / 2 - stage.top;
+    const bend = (x2 - x1) / 2;
+    return `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`;
+  }
+  if (besideLR) {
+    const up = b.top + b.height / 2 < a.top + a.height / 2;
+    const x1 = a.left + a.width / 2 - stage.left, x2 = b.left + b.width / 2 - stage.left;
+    const y1 = (up ? a.top : a.bottom) - stage.top, y2 = (up ? b.bottom : b.top) - stage.top;
+    const bend = (y2 - y1) / 2;
+    return `M${x1},${y1} C${x1},${y1 + bend} ${x2},${y2 - bend} ${x2},${y2}`;
+  }
+  if (leftToRight) {
+    const back = b.left + b.width / 2 < a.left + a.width / 2;
+    const x1 = (back ? a.left : a.right) - stage.left, x2 = (back ? b.right : b.left) - stage.left;
+    const y1 = a.top + a.height / 2 - stage.top, y2 = b.top + b.height / 2 - stage.top;
+    const bend = (x2 - x1) / 2;
+    return `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`;
+  }
+  const back = b.top + b.height / 2 < a.top + a.height / 2;
+  const x1 = a.left + a.width / 2 - stage.left, x2 = b.left + b.width / 2 - stage.left;
+  const y1 = (back ? a.top : a.bottom) - stage.top, y2 = (back ? b.bottom : b.top) - stage.top;
+  const bend = (y2 - y1) / 2;
+  return `M${x1},${y1} C${x1},${y1 + bend} ${x2},${y2 - bend} ${x2},${y2}`;
+}
+// A route around the outside of the graph. It first clears the whole hosts
+// group -- homelab-config beside the hosts included -- then runs along a lane
+// outside everything drawn, then turns into the target from outside.
+// `side` < 0 is over the top (left to right) or down the left (top-down),
+// > 0 the other edge; `lane` spaces the routes on one side apart, both the
+// lane and the point where each route leaves the hosts group.
+function aroundPath(a, b, stage, bounds, group, side, lane) {
+  const r = 14, s = side < 0 ? -1 : 1, off = 20 + lane * 9;
+  const X = v => v - stage.left, Y = v => v - stage.top;
+  if (leftToRight) {
+    const x1 = X(a.right), y1 = Y(a.top + a.height / 2);
+    const dx = X(group.right) + 16 + lane * 7;                 // clear of the group
+    const ly = Y(side < 0 ? bounds.top - off : bounds.bottom + off);
+    const xt = X(b.left + b.width / 2), yt = Y(side < 0 ? b.top : b.bottom);
+    return `M${x1},${y1} L${dx - r},${y1} Q${dx},${y1} ${dx},${y1 + s * r} ` +
+           `L${dx},${ly - s * r} Q${dx},${ly} ${dx + r},${ly} ` +
+           `L${xt - r},${ly} Q${xt},${ly} ${xt},${ly - s * r} L${xt},${yt}`;
+  }
+  const x1 = X(a.left + a.width / 2), y1 = Y(a.bottom);
+  const ey = Y(group.bottom) + 16 + lane * 7;                  // clear of the group
+  const lx = X(side < 0 ? bounds.left - off : bounds.right + off);
+  const xt = X(side < 0 ? b.left : b.right), yt = Y(b.top + b.height / 2);
+  return `M${x1},${y1} L${x1},${ey - r} Q${x1},${ey} ${x1 + s * r},${ey} ` +
+         `L${lx - s * r},${ey} Q${lx},${ey} ${lx},${ey + r} ` +
+         `L${lx},${yt - r} Q${lx},${yt} ${lx - s * r},${yt} L${xt},${yt}`;
+}
+// The box around everything drawn, which the lanes run outside of.
+function contentBounds() {
+  let top = Infinity, left = Infinity, bottom = -Infinity, right = -Infinity;
+  for (const row of Object.values(rows)) {
+    for (const child of row.children) {
+      if (child.classList.contains("hidden")) continue;
+      const r = child.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      top = Math.min(top, r.top); left = Math.min(left, r.left);
+      bottom = Math.max(bottom, r.bottom); right = Math.max(right, r.right);
+    }
+  }
+  return { top, left, bottom, right };
+}
+function drawEdges() {
+  const stage = stageEl.getBoundingClientRect();
+  svg.setAttribute("width", stage.width); svg.setAttribute("height", stage.height);
+  const out = [];
+  const active = activeSources();
+  const activeIds = new Set(active.map(s => s.id));
+  const bounds = contentBounds();
+  // Each host routes around one side: the first half of the hosts one way,
+  // the rest the other. Each route on a side gets its own lane.
+  const hostOrder = DATA.hosts.map(h => h.id);
+  const sideOf = id => hostOrder.indexOf(id) < hostOrder.length / 2 ? -1 : 1;
+  const lanes = { "-1": 0, "1": 0 };
+  const line = (source, targetId, targetEl, cls) => {
+    const p = document.createElementNS(SVG, "path");
+    const a = sourceEls.get(source.id).getBoundingClientRect(), b = targetEl.getBoundingClientRect();
+    if (hostIds.has(source.id) && farIds.has(targetId)) {
+      const side = sideOf(source.id);
+      p.setAttribute("d", aroundPath(a, b, stage, bounds, rows.hosts.getBoundingClientRect(),
+                                     side, lanes[side]++));
+      p.classList.add("around");
+    } else {
+      p.setAttribute("d", edgePath(a, b, stage));
+    }
+    p.setAttribute("stroke", source.hue);
+    p.setAttribute("marker-end", "url(#arrow-" + sources.indexOf(source) + ")");
+    if (cls) p.classList.add(cls);
+    p.dataset.source = source.id;
+    out.push(p);
+  };
+  for (const source of active) {
+    for (const target of DATA.imports[source.id] || []) {
+      if (visible.has(target) && els.has(target)) line(source, target, els.get(target));
+    }
+    for (const home of DATA.enables[source.id] || []) {
+      if (activeIds.has(home)) line(source, home, sourceEls.get(home), "enables");
+    }
+  }
+  pathsG.replaceChildren(...out);
+  document.body.dataset.edges = String(out.length);
+  focusSource(focused);
+}
+let focused = null;
+function focusSource(id) {
+  focused = id;
+  svg.classList.toggle("focus", id !== null);
+  for (const p of pathsG.children) p.classList.toggle("hot", p.dataset.source === id);
+}
+let pending = false;
+window.addEventListener("resize", () => {
+  if (pending) return; pending = true;
+  requestAnimationFrame(() => { pending = false; drawEdges(); });
+});
+
+readHash();
+apply(false);
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  },
+  "hosts=alpha-host": {
+    "selected": "alpha-host",
+    "visible": "5",
+    "edges": "5"
+  },
+  "hosts=beta-host": {
+    "selected": "beta-host",
+    "visible": "3",
+    "edges": "2"
+  },
+  "hosts=home": {
+    "selected": "home",
+    "visible": "1",
+    "edges": "1"
+  },
+  "hosts=alpha-host,beta-host": {
+    "selected": "alpha-host,beta-host",
+    "visible": "6",
+    "edges": "7"
+  },
+  "hosts=nope": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  },
+  "layout=lr": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  },
+  "hosts=alpha-host&layout=lr": {
+    "selected": "alpha-host",
+    "visible": "5",
+    "edges": "5"
+  },
+  "hosts=beta-host&layout=lr": {
+    "selected": "beta-host",
+    "visible": "3",
+    "edges": "2"
+  },
+  "hosts=home&layout=lr": {
+    "selected": "home",
+    "visible": "1",
+    "edges": "1"
+  },
+  "hosts=alpha-host,beta-host&layout=lr": {
+    "selected": "alpha-host,beta-host",
+    "visible": "6",
+    "edges": "7"
+  },
+  "hosts=nope&layout=lr": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  }
+}

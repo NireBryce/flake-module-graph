@@ -1,0 +1,5 @@
+[layout]
+top    = ["host-config", "users"]
+behind = ["host-config"]
+far    = ["users"]
+shared = ["shared"]
