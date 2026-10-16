@@ -5,9 +5,9 @@ which host includes what. Mermaid and Graphviz diagrams, and an interactive
 page where clicking hosts shows only what they reach.
 
 It reads a **module-graph document** (JSON, format version 1) and never
-parses `.nix` files. [category-tree](https://github.com/NireBryce/category-tree)
+parses `.nix` files. [dirs-as-categories](https://github.com/NireBryce/dirs-as-categories)
 publishes one as `flake.moduleGraph`; any tool can write one
-([the format](https://github.com/NireBryce/category-tree/blob/main/doc/format.md)).
+([the format](https://github.com/NireBryce/dirs-as-categories/blob/main/doc/format.md)).
 
 ## Use
 

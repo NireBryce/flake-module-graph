@@ -6,7 +6,7 @@
     module-graph html  [DOCUMENT | -] [--flake REF] [filters]   # the hosts view as an interactive page
 
 The document is a file, `-` for stdin, or --flake REF to run
-`nix eval --json REF` (REF without `#` means REF#moduleGraph, as category-tree
+`nix eval --json REF` (REF without `#` means REF#moduleGraph, as dirs-as-categories
 publishes it). --config FILE sets where areas go (layout.py).
 """
 import argparse

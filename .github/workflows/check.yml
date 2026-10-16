@@ -19,8 +19,8 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: the page in headless Chromium
         run: nix shell nixpkgs#chromium --command python3 tests/browser.py
-      - name: end to end with category-tree's published graph
+      - name: end to end with the graph dirs-as-categories publishes
         run: |
-          nix eval --json 'github:NireBryce/category-tree#tests.main' --apply 'm: m.graph' > graph.json
+          nix eval --json 'github:NireBryce/dirs-as-categories#tests.main' --apply 'm: m.graph' > graph.json
           nix run . -- hosts graph.json | grep -q 'enables'
           nix run . -- html graph.json | grep -q '"title":"hm-agg"'

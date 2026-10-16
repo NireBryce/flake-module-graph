@@ -1,7 +1,7 @@
 """Reading a module-graph document (format version 1).
 
-category-tree publishes one as `flake.moduleGraph`; any other tool can write
-one. doc/format.md in category-tree is the format. Only what the graph needs
+dirs-as-categories publishes one as `flake.moduleGraph`; any other tool can write
+one. doc/format.md in dirs-as-categories is the format. Only what the graph needs
 is checked here: the version, and that the fields it reads have the right
 shape, so a wrong document fails with a message rather than a traceback.
 """
