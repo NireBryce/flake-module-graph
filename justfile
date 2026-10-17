@@ -6,6 +6,10 @@ default:
 test:
     python3 -m unittest discover -s tests
 
+# Every view against its saved output; `just golden --update` rewrites them
+golden *args:
+    python3 tests/golden.py {{args}}
+
 # The page in headless Chromium, against tests/expected/browser.json
 browser:
     python3 tests/browser.py

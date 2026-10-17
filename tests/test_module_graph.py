@@ -20,6 +20,7 @@ from module_graph.layout import Layout, boxed, boxes, layout_links, walk, arrows
 from module_graph.look import ALERT, BOX_FILL, HUES, PALETTE, colours, hues, style  # noqa: E402
 from module_graph.mermaid import mermaid  # noqa: E402
 from module_graph.model import Edge, Graph, Node, graph, select  # noqa: E402
+import golden  # noqa: E402  (tests/golden.py)
 
 # The placement the hosts-view tests assume: a host's and a user's own areas
 # above the hosts, homelab beside them, three shared areas in order.
@@ -733,6 +734,16 @@ class Rendering(Tree):
         rc, out = self.cli('tree', 'DOC', '--categories-only')
         self.assertEqual(rc, 0)
         self.assertIn('used/', out)
+
+
+class Saved(unittest.TestCase):
+    """Every view of tests/fixtures/golden.json, byte for byte against
+    tests/expected/golden/. A change meant to move the drawing: check the
+    diff by eye, then `python3 tests/golden.py --update`."""
+
+    def test_every_view_matches_its_saved_output(self):
+        diffs = golden.differences()
+        self.assertFalse(diffs, '\n' + ''.join(diffs.values()))
 
 
 if __name__ == '__main__':

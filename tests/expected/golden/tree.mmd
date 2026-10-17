@@ -1,0 +1,74 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart LR
+    subgraph g0["hosts-config"]
+        n5("<b>laptop/</b><br/><i>n · 1</i>")
+        n18(["<b>hardware</b><br/><i>n</i>"])
+    end
+    subgraph g1["shared"]
+        n7("<b>desktop/</b><br/><i>n h · 3</i>")
+        n8("<b>extras/</b><br/><i>n · 2</i>")
+        n9("<b>fonts/</b><br/><i>n · 1</i>")
+        n10("<b>lonely/</b><br/><i>n · 1</i>")
+        n11("<b>printing/</b><br/><i>n · 1</i>")
+        n22["<b>apps/</b><br/><i>h · 2</i>"]
+        n23(["<b>wm</b><br/><i>n</i>"])
+        n24(["<b>editor</b><br/><i>n</i>"])
+        n25(["<b>other</b><br/><i>n</i>"])
+        n26(["<b>mono</b><br/><i>n</i>"])
+        n27(["<b>unused</b><br/><i>n</i>"])
+        n28(["<b>cups</b><br/><i>n</i>"])
+        n31("<b>games/</b><br/><i>h · 1</i>")
+        n32(["<b>browser</b><br/><i>h</i>"])
+        n33(["<b>chess</b><br/><i>h</i>"])
+        subgraph g2["<b>base/</b> · <i>n h d · 3</i>"]
+            n19("<b>net/</b><br/><i>n h · 1</i>")
+            n20(["<b>locale</b><br/><i>n d</i>"])
+            n21(["<b>turn-on</b><br/><i>n</i>"])
+            n30(["<b>ssh</b><br/><i>n h</i>"])
+        end
+    end
+    subgraph g3["users"]
+        n12("<b>shell/</b><br/><i>h · 1</i>")
+        n13(["<b>me-home</b><br/><i>h</i>"])
+        n29(["<b>zsh</b><br/><i>h</i>"])
+    end
+    subgraph g4["hosts"]
+        n14(["<b>laptop-host</b><br/><i>n</i>"])
+        n15(["<b>mac</b><br/><i>d</i>"])
+        n16(["<b>server</b><br/><i>n</i>"])
+    end
+    subgraph g5["(top level)"]
+        n17(["<b>overlay</b><br/><i>n</i>"])
+    end
+    n5 --> n18
+    n7 --> n22
+    n7 --> n23
+    n8 --> n24
+    n8 --> n25
+    n9 --> n26
+    n10 --> n27
+    n11 --> n28
+    n12 --> n29
+    n19 --> n30
+    n22 -.-> n31
+    n22 --> n32
+    n31 --> n33
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g2 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g3 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g4 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g5 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n5,n7,n8,n9,n10,n11,n12,n19,n31 category
+    class n8 bymodule
+    class n10 orphan
+    class n13,n14,n15,n16,n17,n18,n20,n21,n23,n24,n25,n26,n27,n28,n29,n30,n32,n33 module
+    class n22 folder
