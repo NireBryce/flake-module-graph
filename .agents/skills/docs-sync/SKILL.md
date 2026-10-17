@@ -20,7 +20,7 @@ git grep -n '<old name>\|<old message>\|<old path>'
 ```
 
 Grep for every name, key, flag, message and path the diff changed or
-removed -- across `README.md`, `doc/`, `AGENTS.md`, `.agents/skills/`,
+removed -- across `README.md`, `doc/`, `wiki/`, `AGENTS.md`, `.agents/skills/`,
 code comments and test descriptions. A present-tense claim about another
 file is a live pointer (skill `fact-hygiene`).
 

@@ -18,6 +18,10 @@ format.
 
 ## Hard rules
 
+- **This project is experimental.** Never describe it as stable or
+  production-ready; keep the README's notice and the pointers to it in the
+  wiki. Say what a change breaks for users, since nothing here promises
+  compatibility yet.
 - **"push" means skill `ship`**: branch, PR, green CI, one confirmation
   covering merge and branch deletion. Never push to `main` directly.
 - **Branching work happens in its own worktree** (skill `use-a-worktree`).
@@ -57,6 +61,8 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `module_graph/mermaid.py`, `dot.py`, `page.py`, `page.html` | the renderers |
 | `module_graph/document.py` | reading and checking a document |
 | `tests/` | unit tests, the browser check and its fixture |
+| `doc/style.md` | how all the docs are written |
+| `wiki/` | guides: `using-the-tool.md`; `styleguide.md` before adding a page |
 
 ## Testing discipline
 
