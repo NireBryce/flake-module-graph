@@ -45,16 +45,47 @@ def loads(text):
     return check(doc)
 
 
+# `nix eval` and flakes are still experimental features of Nix, off in a
+# fresh install. Turning them on for this one command changes nothing where
+# they are already on.
+NIX = ['nix', '--extra-experimental-features', 'nix-command flakes']
+
+# (text in Nix's error, what to do about it), for the mistakes someone new
+# to flakes makes first. `{attr}` is the attribute asked for.
+HINTS = [
+    ('does not provide attribute',
+     "this flake doesn't publish `{attr}`. A flake using dirs-as-categories "
+     'publishes `moduleGraph` (https://github.com/NireBryce/dirs-as-categories); '
+     'another attribute is --flake REF#ATTR'),
+    ('is not tracked by Git',
+     'a flake in a git repository sees only the files git knows about: '
+     '`git add` the new files (no commit needed) and run this again'),
+]
+
+
+def nix_cause(stderr):
+    """The innermost cause in Nix's error output. Nix prints the outermost
+    context first and the cause last, each as an `error:` line, around
+    source excerpts and advice: the last `error:` line with text is the
+    cause. Output without one gives its last line."""
+    lines = [l.strip() for l in stderr.strip().splitlines()]
+    causes = [l.removeprefix('error:').strip() for l in lines if l.startswith('error:')]
+    causes = [c for c in causes if c]
+    return causes[-1] if causes else (lines[-1] if lines else '')
+
+
 def from_flake(ref, run=subprocess.run):
     """The document a flake publishes: `nix eval --json <ref>`, where a ref
     without `#` means `<ref>#moduleGraph`."""
     if '#' not in ref:
         ref += '#moduleGraph'
     try:
-        r = run(['nix', 'eval', '--json', ref], capture_output=True, text=True)
+        r = run([*NIX, 'eval', '--json', ref], capture_output=True, text=True)
     except FileNotFoundError:
         fail('nix is not installed')
     if r.returncode:
-        lines = r.stderr.strip().splitlines()
-        fail(f'nix eval {ref} failed: {lines[-1] if lines else f"exit {r.returncode}"}')
+        cause = nix_cause(r.stderr) or f'exit {r.returncode}'
+        hint = next((h for text, h in HINTS if text in r.stderr),
+                    f"run `nix eval --json {ref}` to see Nix's whole error")
+        fail(f'nix eval {ref} failed: {cause}\n  hint: {hint.format(attr=ref.split("#", 1)[1])}')
     return loads(r.stdout)

@@ -20,6 +20,11 @@ reading the drawings, the interactive page and each error.
 
 ## Use
 
+These need [Nix](https://nixos.org/download) with flakes turned on. On a fresh
+install, put `--extra-experimental-features 'nix-command flakes'` after `nix`
+in the first command, or turn them on for good in `~/.config/nix/nix.conf`:
+`experimental-features = nix-command flakes`.
+
 ```sh
 nix run github:NireBryce/flake-module-graph -- hosts --flake .            # Mermaid, hosts view
 nix run github:NireBryce/flake-module-graph -- html --flake . > modules.html
@@ -34,7 +39,8 @@ nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- d
 | `html` | the hosts view as a self-contained interactive page |
 
 The document is a file, `-` for stdin, or `--flake REF` (runs
-`nix eval --json REF`; a REF without `#` means `REF#moduleGraph`).
+`nix eval --json REF`, with flakes turned on for that command; a REF without
+`#` means `REF#moduleGraph`).
 
 Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the
