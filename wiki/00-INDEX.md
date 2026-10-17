@@ -2,8 +2,9 @@
 
 _Last modified: 2026-10-16_
 
-Guides for using and changing flake-module-graph. The front door is the
-[README](../README.md); the document format is
+Guides for using and changing flake-module-graph, which is **experimental**:
+read the [README](../README.md)'s notice before relying on it. The document
+format is
 [dirs-as-categories' `doc/format.md`](https://github.com/NireBryce/dirs-as-categories/blob/main/doc/format.md).
 
 | Page | For |

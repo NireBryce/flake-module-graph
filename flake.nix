@@ -1,5 +1,5 @@
 {
-    description = "Draw a flake's modules tree: Mermaid, Graphviz, and an interactive page";
+    description = "Draw a flake's modules tree: Mermaid, Graphviz, and an interactive page (experimental)";
 
     inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 

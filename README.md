@@ -1,5 +1,12 @@
 # flake-module-graph
 
+> **Experimental. Don't use this unless you know what you're doing.** It is
+> young, and everything here may change without notice: the commands and
+> flags, the layout file, what the drawings and the page show, and the
+> document format it reads (dirs-as-categories' `flake.moduleGraph`, itself
+> experimental). If you use it anyway, pin a revision and check its output
+> after updating.
+
 Draws a flake's modules tree: which categories exist, what sits in them, and
 which host includes what. Mermaid and Graphviz diagrams, and an interactive
 page where clicking hosts shows only what they reach.

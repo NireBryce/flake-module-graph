@@ -6,6 +6,9 @@ How to draw a flake's modules tree: getting a document, the four views,
 where areas go, what the drawings mean, the interactive page, and what each
 error means. Every command here was run against the example below.
 
+**flake-module-graph is experimental** and may change without notice; read
+the [README](../README.md)'s notice before relying on it.
+
 ## Contents
 
 - [Quick facts](#quick-facts)

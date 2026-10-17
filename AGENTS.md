@@ -18,6 +18,10 @@ format.
 
 ## Hard rules
 
+- **This project is experimental.** Never describe it as stable or
+  production-ready; keep the README's notice and the pointers to it in the
+  wiki. Say what a change breaks for users, since nothing here promises
+  compatibility yet.
 - **"push" means skill `ship`**: branch, PR, green CI, one confirmation
   covering merge and branch deletion. Never push to `main` directly.
 - **Branching work happens in its own worktree** (skill `use-a-worktree`).
