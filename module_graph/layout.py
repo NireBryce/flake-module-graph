@@ -53,6 +53,8 @@ class Box:
 
 
 def children_of(g):
+    """id -> the ids it `contains`, in edge order (select() has already
+    sorted them)."""
     kids = {}
     for e in g.edges:
         if e.kind == 'contains':
@@ -100,11 +102,12 @@ def walk(tree):
         yield from walk(b.subs)
 
 
-def rep(i, index):
-    """The node an edge or a layout link uses for `i`: a boxed category is
-    reached through the first thing in its box."""
-    while i in index:
-        i = index[i].top[0]
+def anchor(i, box_of):
+    """The card an edge or a layout link attaches to for `i`. A boxed
+    category has no card of its own -- it is drawn as a box -- so it is
+    reached through the first thing in its box (`box_of`: id -> Box)."""
+    while i in box_of:
+        i = box_of[i].top[0]
     return i
 
 
@@ -149,7 +152,7 @@ def layout_links(g, wrap=WRAP, layout=Layout()):
     if not hosts_view(g):
         return []
     tree = boxes(g)
-    index = {b.id: b for b in walk(tree) if b.kind == 'category'}
+    box_of = {b.id: b for b in walk(tree) if b.kind == 'category'}
     first = next(i for i, n in g.nodes.items() if n.kind == 'aggregate')
 
     def rows(items):
@@ -158,17 +161,17 @@ def layout_links(g, wrap=WRAP, layout=Layout()):
         return [items[k:k + wrap] for k in range(0, len(items), wrap)]
 
     def height(i):
-        if i not in index:
+        if i not in box_of:
             return 1
-        return sum(max(height(c) for c in r) for r in rows(index[i].top))
+        return sum(max(height(c) for c in r) for r in rows(box_of[i].top))
 
     links = []
 
     def place(top, rank):
         for row in rows(top):
             for i in row:
-                if i in index:
-                    place(index[i].top, rank)
+                if i in box_of:
+                    place(box_of[i].top, rank)
                 else:
                     links.append((first, i, rank))
             rank += max(height(i) for i in row)

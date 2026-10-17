@@ -23,6 +23,7 @@ interactive page, the colour standard, `[layout]` settings, or what
 | `module_graph/page.py`, `page.html` | the interactive page: Python decides the model and look, the page only lays out and filters |
 | `module_graph/document.py` | reading and checking a format-1 document |
 | `tests/test_module_graph.py` | unit tests; the `Doc` builder makes documents |
+| `tests/golden.py` | every view of `tests/fixtures/golden.json`, against `tests/expected/golden/` |
 | `tests/browser.py` | the page in headless Chromium, against `tests/expected/browser.json` |
 
 ## The rules that hold the drawing together
@@ -58,8 +59,12 @@ interactive page, the colour standard, `[layout]` settings, or what
 2. A page change: run `python3 tests/browser.py`. If the expected counts
    change, check the new values **by hand against the fixture** before
    `--update` -- never record numbers you haven't explained.
-3. A refactor meant to change nothing: render a real document before and
-   after and compare byte for byte.
+3. Every view of `tests/fixtures/golden.json` is saved in
+   `tests/expected/golden/`, and the unit tests compare against it. A
+   refactor meant to change nothing leaves it untouched. A change meant to
+   move the drawing: `just golden` prints the diff; read it, then
+   `just golden --update` and commit the diff with the change. A new kind of
+   thing to draw gets a case in the fixture first.
 4. Break it on purpose and watch a test fail for the right reason.
 5. `doc`/README, `just preflight`; a change to the document format follows
    dirs-as-categories' `doc/format.md` and its version.

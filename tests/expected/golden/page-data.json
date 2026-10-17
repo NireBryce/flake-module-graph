@@ -1,0 +1,221 @@
+{
+ "areas": [
+  {
+   "id": "area:shared",
+   "kind": "area",
+   "title": "shared",
+   "sub": "",
+   "children": [
+    {
+     "id": "cat:shared/base",
+     "kind": "category",
+     "title": "base/",
+     "sub": "n h d \u00b7 3",
+     "status": "imported",
+     "children": [
+      {
+       "id": "cat:shared/base/net",
+       "kind": "category",
+       "title": "net/",
+       "sub": "n h \u00b7 1",
+       "status": "inherited"
+      }
+     ]
+    },
+    {
+     "id": "cat:shared/desktop",
+     "kind": "category",
+     "title": "desktop/",
+     "sub": "n h \u00b7 3",
+     "status": "imported",
+     "children": [
+      {
+       "id": "cat:shared/desktop/apps/games",
+       "kind": "category",
+       "title": "games/",
+       "sub": "h \u00b7 1",
+       "status": "imported"
+      }
+     ]
+    },
+    {
+     "id": "cat:shared/extras",
+     "kind": "category",
+     "title": "extras/",
+     "sub": "n \u00b7 2",
+     "status": "by-module",
+     "children": [
+      {
+       "id": "mod:shared/extras/editor.nix",
+       "kind": "module",
+       "title": "editor",
+       "sub": "n"
+      }
+     ]
+    },
+    {
+     "id": "cat:shared/fonts",
+     "kind": "category",
+     "title": "fonts/",
+     "sub": "n \u00b7 1",
+     "status": "imported"
+    },
+    {
+     "id": "cat:shared/lonely",
+     "kind": "category",
+     "title": "lonely/",
+     "sub": "n \u00b7 1",
+     "status": "orphan"
+    },
+    {
+     "id": "cat:shared/printing",
+     "kind": "category",
+     "title": "printing/",
+     "sub": "n \u00b7 1",
+     "status": "imported"
+    }
+   ],
+   "place": "shared"
+  },
+  {
+   "id": "area:hosts-config",
+   "kind": "area",
+   "title": "hosts-config",
+   "sub": "",
+   "children": [
+    {
+     "id": "cat:hosts-config/laptop",
+     "kind": "category",
+     "title": "laptop/",
+     "sub": "n \u00b7 1",
+     "status": "imported"
+    }
+   ],
+   "place": "behind"
+  },
+  {
+   "id": "area:users",
+   "kind": "area",
+   "title": "users",
+   "sub": "",
+   "children": [
+    {
+     "id": "cat:users/me/shell",
+     "kind": "category",
+     "title": "shell/",
+     "sub": "h \u00b7 1",
+     "status": "imported"
+    }
+   ],
+   "place": "user"
+  },
+  {
+   "id": "area:(not found)",
+   "kind": "area",
+   "title": "not found",
+   "sub": "",
+   "place": "shared",
+   "children": [
+    {
+     "id": "missing:ghost",
+     "kind": "missing",
+     "title": "ghost",
+     "sub": "no such module"
+    }
+   ]
+  }
+ ],
+ "hosts": [
+  {
+   "id": "agg:hosts/laptop.nix:nixos",
+   "title": "laptop-host",
+   "sub": "nixos",
+   "hue": "#16a34a"
+  },
+  {
+   "id": "agg:hosts/mac.nix:darwin",
+   "title": "mac",
+   "sub": "darwin",
+   "hue": "#d97706"
+  },
+  {
+   "id": "agg:hosts/server.nix:nixos",
+   "title": "server",
+   "sub": "nixos",
+   "hue": "#9333ea"
+  }
+ ],
+ "homes": [
+  {
+   "id": "agg:users/me/home.nix:homeManager",
+   "title": "me-home",
+   "sub": "homeManager",
+   "hue": "#db2777"
+  }
+ ],
+ "imports": {
+  "agg:hosts/laptop.nix:nixos": [
+   "cat:hosts-config/laptop",
+   "cat:shared/base",
+   "cat:shared/desktop",
+   "cat:shared/fonts",
+   "cat:shared/printing",
+   "mod:shared/extras/editor.nix",
+   "missing:ghost"
+  ],
+  "agg:hosts/mac.nix:darwin": [
+   "cat:shared/base"
+  ],
+  "agg:hosts/server.nix:nixos": [
+   "cat:shared/base",
+   "cat:shared/printing"
+  ],
+  "agg:users/me/home.nix:homeManager": [
+   "cat:users/me/shell",
+   "cat:shared/desktop/apps/games"
+  ]
+ },
+ "enables": {
+  "agg:hosts/laptop.nix:nixos": [
+   "agg:users/me/home.nix:homeManager"
+  ],
+  "agg:hosts/mac.nix:darwin": [],
+  "agg:hosts/server.nix:nixos": [
+   "agg:users/me/home.nix:homeManager"
+  ],
+  "agg:users/me/home.nix:homeManager": []
+ },
+ "style": {
+  "palette": {
+   "area": [
+    "#f8fafc",
+    "#cbd5e1"
+   ],
+   "category": [
+    "#dbeafe",
+    "#2563eb"
+   ],
+   "folder": [
+    "#f1f5f9",
+    "#94a3b8"
+   ],
+   "module": [
+    "#ffffff",
+    "#94a3b8"
+   ],
+   "aggregate": [
+    "#ffffff",
+    "#f59e0b"
+   ],
+   "missing": [
+    "#fee2e2",
+    "#ef4444"
+   ]
+  },
+  "alert": [
+   "#fff1f2",
+   "#e11d48"
+  ],
+  "boxFill": "#eff6ff"
+ }
+}

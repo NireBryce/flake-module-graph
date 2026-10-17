@@ -14,8 +14,9 @@ step before saying "done".
 ## Run first
 
 1. `just preflight` -- unit tests, the browser check, flake check.
-2. A refactor meant to change nothing: render a real document before and
-   after and compare byte for byte.
+2. `tests/expected/golden/` changed: read its diff. A refactor meant to
+   change nothing must not touch it; anything else must explain each line
+   that moved.
 
 ## Read for
 

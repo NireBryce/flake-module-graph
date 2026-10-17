@@ -22,18 +22,25 @@ from .model import graph, select
 from .page import page
 
 
-def read(a, run):
-    if a.flake is not None:
-        if a.document is not None:
+# Which graph each command draws: `dot` draws either, by --view.
+VIEW = {'tree': 'tree', 'hosts': 'hosts', 'html': 'hosts'}
+
+
+def read(args, run):
+    """The document: from --flake, a file, or stdin (`-`)."""
+    if args.flake is not None:
+        if args.document is not None:
             raise SystemExit('error: give a DOCUMENT or --flake, not both')
-        return document.from_flake(a.flake, run)
-    if a.document is None:
+        return document.from_flake(args.flake, run)
+    if args.document is None:
         raise SystemExit('error: give a DOCUMENT (a file, or - for stdin) or --flake REF')
-    text = sys.stdin.read() if a.document == '-' else pathlib.Path(a.document).read_text()
-    return document.loads(text)
+    if args.document == '-':
+        return document.loads(sys.stdin.read())
+    return document.loads(pathlib.Path(args.document).read_text())
 
 
 def main(argv=None, run=subprocess.run):
+    """The command line. `run` stands in for subprocess.run in tests."""
     ap = argparse.ArgumentParser(prog='module-graph', description=__doc__.split('\n\n')[0])
     ap.add_argument('cmd', choices=['tree', 'hosts', 'dot', 'html'])
     ap.add_argument('document', nargs='?', help='a module-graph JSON file, or - for stdin')
@@ -45,16 +52,17 @@ def main(argv=None, run=subprocess.run):
     ap.add_argument('--view', choices=['tree', 'hosts'], default='tree', help='for dot: which graph')
     ap.add_argument('--wrap', type=int, default=WRAP,
                     help=f'hosts view: categories per row in a shared area (default {WRAP}; 0: one row)')
-    a = ap.parse_args(argv)
-    layout = load_layout(a.config) if a.config else Layout()
-    view = a.view if a.cmd == 'dot' else 'hosts' if a.cmd == 'html' else a.cmd
-    sub = select(graph(read(a, run)), view, a.category, a.depth, a.categories_only)
-    if a.cmd == 'html':
-        print(page(sub, layout))
-    elif a.cmd == 'dot':
-        print(dot(sub, a.wrap, layout))
+    args = ap.parse_args(argv)
+    layout = load_layout(args.config) if args.config else Layout()
+    view = args.view if args.cmd == 'dot' else VIEW[args.cmd]
+    model = graph(read(args, run))
+    drawn = select(model, view, args.category, args.depth, args.categories_only)
+    if args.cmd == 'html':
+        print(page(drawn, layout))
+    elif args.cmd == 'dot':
+        print(dot(drawn, args.wrap, layout))
     else:
-        print(mermaid(sub, a.wrap, layout))
+        print(mermaid(drawn, args.wrap, layout))
     return 0
 
 

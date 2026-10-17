@@ -20,6 +20,7 @@ from module_graph.layout import Layout, boxed, boxes, layout_links, walk, arrows
 from module_graph.look import ALERT, BOX_FILL, HUES, PALETTE, colours, hues, style  # noqa: E402
 from module_graph.mermaid import mermaid  # noqa: E402
 from module_graph.model import Edge, Graph, Node, graph, select  # noqa: E402
+import golden  # noqa: E402  (tests/golden.py)
 
 # The placement the hosts-view tests assume: a host's and a user's own areas
 # above the hosts, homelab beside them, three shared areas in order.
@@ -426,22 +427,51 @@ class Boxes(Tree):
         self.assertRegex(m, rf'style g\d+ fill:{BOX_FILL},stroke:{ALERT[1]}.*stroke-width:2.5px')
 
 
-class FakeNix:
-    """Stands in for subprocess.run: answers `nix eval --json <ref>` from a
-    dict keyed by ref. A ref it doesn't know fails; `missing=True` acts as if
-    nix is absent."""
+# What Nix 2.34 printed for three common mistakes, paths made generic.
+NIX_NO_ATTRIBUTE = """\
+error: flake 'git+file:///home/me/flake' does not provide attribute 'packages.x86_64-linux.moduleGraph', 'legacyPackages.x86_64-linux.moduleGraph' or 'moduleGraph'
+       Did you mean module-graph?
+"""
+NIX_UNTRACKED = """\
+warning: Git tree '/home/me/flake' is dirty
+error:
+       … while calling the 'import' builtin
+         at /home/me/flake/flake.nix:1:32:
+            1| { outputs = _: { moduleGraph = import ./g.nix; }; }
+             |                                ^
+            2|
 
-    def __init__(self, answers, missing=False):
-        self.answers, self.missing, self.calls = answers, missing, []
+       error: Path 'g.nix' in the repository "/home/me/flake" is not tracked by Git.
+
+       To make it visible to Nix, run:
+
+       git -C "/home/me/flake" add "g.nix"
+"""
+NIX_UNDEFINED = """\
+warning: Git tree '/home/me/flake' is dirty
+error: undefined variable 'undefinedThing'
+       at /home/me/flake/flake.nix:1:32:
+            1| { outputs = _: { moduleGraph = undefinedThing; }; }
+             |                                ^
+            2|
+"""
+
+
+class FakeNix:
+    """Stands in for subprocess.run: answers `nix ... eval --json <ref>` from
+    a dict keyed by ref. A ref it doesn't know fails, printing `stderr`;
+    `missing=True` acts as if nix is absent."""
+
+    def __init__(self, answers, missing=False, stderr=NIX_NO_ATTRIBUTE):
+        self.answers, self.missing, self.stderr, self.calls = answers, missing, stderr, []
 
     def __call__(self, cmd, **kw):
         self.calls.append(cmd)
         if self.missing:
             raise FileNotFoundError('nix')
-        ref = cmd[3]
+        ref = cmd[-1]
         if ref not in self.answers:
-            return types.SimpleNamespace(returncode=1, stdout='',
-                                         stderr=f"error: flake '{ref}' does not provide it\n")
+            return types.SimpleNamespace(returncode=1, stdout='', stderr=self.stderr)
         return types.SimpleNamespace(returncode=0, stdout=json.dumps(self.answers[ref]), stderr='')
 
 
@@ -451,15 +481,39 @@ class Documents(Tree):
     def test_a_flake_ref_defaults_to_moduleGraph(self):
         fake = FakeNix({'.#moduleGraph': self.d.build()})
         self.assertEqual(document.from_flake('.', fake), self.d.build())
-        self.assertEqual(fake.calls[0], ['nix', 'eval', '--json', '.#moduleGraph'])
+        self.assertEqual(fake.calls[0][-3:], ['eval', '--json', '.#moduleGraph'])
         fake = FakeNix({'.#other': self.d.build()})
         document.from_flake('.#other', fake)
-        self.assertEqual(fake.calls[0][3], '.#other')
+        self.assertEqual(fake.calls[0][-1], '.#other')
+
+    def test_flakes_need_not_be_turned_on_already(self):
+        # nix-command and flakes are still experimental: without this, a
+        # fresh Nix install refuses `nix eval` before reading the flake
+        fake = FakeNix({'.#moduleGraph': self.d.build()})
+        document.from_flake('.', fake)
+        self.assertEqual(fake.calls[0][:3], ['nix', '--extra-experimental-features', 'nix-command flakes'])
+
+    def test_nix_errors_name_the_cause_and_what_to_do(self):
+        cases = {   # stderr -> (the cause, the hint)
+            NIX_NO_ATTRIBUTE: ("does not provide attribute 'packages.x86_64-linux.moduleGraph'",
+                               "doesn't publish `moduleGraph`"),
+            NIX_UNTRACKED: ("Path 'g.nix' in the repository \"/home/me/flake\" is not tracked by Git.",
+                            '`git add`'),
+            NIX_UNDEFINED: ("undefined variable 'undefinedThing'",
+                            'nix eval --json .#moduleGraph'),
+        }
+        for stderr, (cause, hint) in cases.items():
+            with self.assertRaises(SystemExit) as cm:
+                document.from_flake('.', FakeNix({}, stderr=stderr))
+            first, *rest = str(cm.exception).splitlines()
+            self.assertTrue(first.startswith('error: module-graph document: nix eval .#moduleGraph failed: '))
+            self.assertIn(cause, first)
+            self.assertIn(hint, '\n'.join(rest))
 
     def test_evaluation_failures_say_why(self):
         with self.assertRaises(SystemExit) as cm:
-            document.from_flake('.', FakeNix({}))
-        self.assertIn('does not provide it', str(cm.exception))
+            document.from_flake('.', FakeNix({}, stderr='something odd\n'))
+        self.assertIn('something odd', str(cm.exception))   # no `error:` line: the last line
         with self.assertRaises(SystemExit) as cm:
             document.from_flake('.', FakeNix({}, missing=True))
         self.assertIn('nix is not installed', str(cm.exception))
@@ -733,6 +787,16 @@ class Rendering(Tree):
         rc, out = self.cli('tree', 'DOC', '--categories-only')
         self.assertEqual(rc, 0)
         self.assertIn('used/', out)
+
+
+class Saved(unittest.TestCase):
+    """Every view of tests/fixtures/golden.json, byte for byte against
+    tests/expected/golden/. A change meant to move the drawing: check the
+    diff by eye, then `python3 tests/golden.py --update`."""
+
+    def test_every_view_matches_its_saved_output(self):
+        diffs = golden.differences()
+        self.assertFalse(diffs, '\n' + ''.join(diffs.values()))
 
 
 if __name__ == '__main__':

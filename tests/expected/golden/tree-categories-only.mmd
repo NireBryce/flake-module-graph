@@ -1,0 +1,36 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart LR
+    subgraph g0["users"]
+        n12("<b>shell/</b><br/><i>h · 1</i>")
+    end
+    subgraph g1["shared"]
+        n8("<b>extras/</b><br/><i>n · 2</i>")
+        n9("<b>fonts/</b><br/><i>n · 1</i>")
+        n10("<b>lonely/</b><br/><i>n · 1</i>")
+        n11("<b>printing/</b><br/><i>n · 1</i>")
+        subgraph g2["<b>base/</b> · <i>n h d · 3</i>"]
+            n13("<b>net/</b><br/><i>n h · 1</i>")
+        end
+        subgraph g3["<b>desktop/</b> · <i>n h · 3</i>"]
+            n14("<b>games/</b><br/><i>h · 1</i>")
+        end
+    end
+    subgraph g4["hosts-config"]
+        n5("<b>laptop/</b><br/><i>n · 1</i>")
+    end
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g2 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g3 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g4 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n5,n8,n9,n10,n11,n12,n13,n14 category
+    class n8 bymodule
+    class n10 orphan

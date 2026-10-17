@@ -1,6 +1,6 @@
 # Using the tool
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_
 
 How to draw a flake's modules tree: getting a document, the four views,
 where areas go, what the drawings mean, the interactive page, and what each
@@ -57,7 +57,10 @@ module-graph hosts graph.json                    # a file
 nix eval --json .#moduleGraph | module-graph hosts -   # stdin
 ```
 
-`--flake REF` without a `#` means `REF#moduleGraph`. Writing the document to
+`--flake REF` without a `#` means `REF#moduleGraph`. The tool turns on
+Nix's `nix-command` and `flakes` features for its own `nix eval`, so it works
+on a fresh Nix install; your own `nix` commands, like the stdin one above,
+still need them on. Writing the document to
 a file first is useful when the flake needs `--override-input` or other
 `nix eval` options the tool doesn't pass.
 
@@ -208,6 +211,9 @@ it is stale keeps it honest.
 | ``error: module-graph document: `categories` must be an object`` | a required field is missing or the wrong type (also `modules`) |
 | ``error: module-graph document: categories.x: needs a string `dir` `` | one entry is malformed; the message names it |
 | `error: module-graph document: not JSON (…)` | the input isn't JSON -- often `nix eval` printed a warning into it; use `--json` and keep stderr out |
-| `error: module-graph document: nix eval /path#moduleGraph failed: …` | the flake didn't evaluate, or doesn't publish `moduleGraph`; the last line of Nix's error follows |
+| `error: module-graph document: nix eval /path#moduleGraph failed: …` | the flake didn't evaluate; the innermost cause from Nix's error follows, then a `hint:` line |
+| `… failed: flake '…' does not provide attribute … 'moduleGraph'` | the flake doesn't publish `moduleGraph` (dirs-as-categories does); name another attribute with `--flake REF#ATTR` |
+| `… failed: Path 'x.nix' in the repository "…" is not tracked by Git.` | a flake in a git repository sees only files git knows about: `git add` them (no commit needed) |
+| any other `… failed: …` | run the `nix eval --json` command the hint names to see Nix's whole error |
 | `error: give a DOCUMENT (a file, or - for stdin) or --flake REF` | nothing to draw |
 | `error: no category 'nope'; categories: …` | `--category` named something that isn't a category |

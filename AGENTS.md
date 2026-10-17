@@ -44,6 +44,7 @@ format.
 ```sh
 just                 # list recipes
 just test            # unit tests
+just golden          # every view against its saved output (`just golden --update`)
 just browser         # the page in headless Chromium (needs chromium: `nix develop`)
 just check           # nix flake check: unit tests and the packaged command
 just preflight       # all of the above -- what CI runs
@@ -60,7 +61,7 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `module_graph/layout.py` | `[layout]` settings, boxes, rank links |
 | `module_graph/mermaid.py`, `dot.py`, `page.py`, `page.html` | the renderers |
 | `module_graph/document.py` | reading and checking a document |
-| `tests/` | unit tests, the browser check and its fixture |
+| `tests/` | unit tests, the saved views (`golden.py`), the browser check, their fixtures |
 | `doc/style.md` | how all the docs are written |
 | `wiki/` | guides: `using-the-tool.md`; `styleguide.md` before adding a page |
 
@@ -73,8 +74,9 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
   against the fixture first.
 - **Break it on purpose**: undo the core of a change and confirm a test
   fails for *that* reason.
-- **A refactor meant to change nothing** is compared byte for byte on a
-  real document, before and after.
+- **Every view is saved** (`tests/expected/golden/`, `just golden`): a
+  refactor meant to change nothing leaves them byte for byte; a change
+  meant to move the drawing has its `git diff` read before `--update`.
 
 ## The contract with dirs-as-categories
 

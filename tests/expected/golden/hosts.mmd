@@ -1,0 +1,77 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart TB
+    subgraph g0["hosts-config"]
+        n0("<b>laptop/</b><br/><i>n · 1</i>")
+    end
+    subgraph g1["shared"]
+        n5("<b>extras/</b><br/><i>n · 2</i>")
+        n6("<b>fonts/</b><br/><i>n · 1</i>")
+        n7("<b>lonely/</b><br/><i>n · 1</i>")
+        n8("<b>printing/</b><br/><i>n · 1</i>")
+        n10(["<b>editor</b><br/><i>n</i>"])
+        subgraph g2["<b>base/</b> · <i>n h d · 3</i>"]
+            n2("<b>net/</b><br/><i>n h · 1</i>")
+        end
+        subgraph g3["<b>desktop/</b> · <i>n h · 3</i>"]
+            n4("<b>games/</b><br/><i>h · 1</i>")
+        end
+    end
+    subgraph g4["users"]
+        n9("<b>shell/</b><br/><i>h · 1</i>")
+    end
+    subgraph g5["hosts and home"]
+        n16[["<b>laptop-host</b><br/><i>nixos</i>"]]
+        n18[["<b>mac</b><br/><i>darwin</i>"]]
+        n19[["<b>server</b><br/><i>nixos</i>"]]
+        n20[["<b>me-home</b><br/><i>homeManager</i>"]]
+    end
+    n17{{"<b>ghost</b><br/><i>no such module</i>"}}
+    n5 --> n10
+    n0 --- n16
+    n16 --> g2
+    n16 --> g3
+    n16 --> n6
+    n16 --> n8
+    n16 --> n10
+    n16 --> n17
+    n18 --> g2
+    n19 --> g2
+    n19 --> n8
+    n9 --- n20
+    n20 --> n4
+    n16 -. enables .-> n20
+    n19 -. enables .-> n20
+    n16 ~~~ n2
+    n16 ~~~ n4
+    n16 ~~~ n5
+    n16 ~~~ n6
+    n16 ~~~ n7
+    n16 ~~~~ n8
+    linkStyle 1,2,3,4,5,6,7,13 stroke:#16a34a,stroke-width:1.5px
+    linkStyle 8 stroke:#d97706,stroke-width:1.5px
+    linkStyle 9,10,14 stroke:#9333ea,stroke-width:1.5px
+    linkStyle 11,12 stroke:#db2777,stroke-width:1.5px
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g2 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g3 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g4 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g5 fill:#fefce8,stroke:#fde68a,color:#64748b
+    style n16 stroke:#16a34a,stroke-width:2px
+    style n18 stroke:#d97706,stroke-width:2px
+    style n19 stroke:#9333ea,stroke-width:2px
+    style n20 stroke:#db2777,stroke-width:2px
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n0,n2,n4,n5,n6,n7,n8,n9 category
+    class n5 bymodule
+    class n7 orphan
+    class n10 module
+    class n16,n18,n19,n20 aggregate
+    class n17 missing

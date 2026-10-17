@@ -1,4 +1,16 @@
-"""Draw a flake's modules tree from a module-graph document. See __main__.py."""
+"""Draw a flake's modules tree from a module-graph document.
+
+Every command runs the same four steps, one module each:
+
+    document.py   read and check the JSON document (from a file, stdin, or `nix eval`)
+    model.py      graph(): nodes and edges for the whole tree
+                  select(): the part one drawing shows (--category, --depth, ...)
+    layout.py     where things go: containers, rows, the [layout] settings
+    mermaid.py, dot.py, page.py
+                  draw it, in the colours look.py sets for every renderer
+
+__main__.py is the command line that joins them.
+"""
 from .document import from_flake, loads
 from .dot import dot
 from .layout import Layout, load_layout

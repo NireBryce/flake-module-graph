@@ -1,16 +1,26 @@
-"""Graphviz: areas as clusters, boxed categories as nested clusters."""
+"""Graphviz: areas as clusters, box_of categories as nested clusters.
+
+A graph here is, in order: the graph defaults, the clusters with their
+cards, the cards outside every cluster, the invisible layout links, the row
+that holds the hosts, then the arrows.
+"""
 import html
 
-from .layout import WRAP, Layout, arrows, boxes, hosts_view, layout_links, rep, upward, walk
+from .layout import WRAP, Layout, anchor, arrows, boxes, hosts_view, layout_links, upward, walk
 from .look import INK, LINE, QUIET, box_look, colours, hues, parts
 
 GRID = 4      # cards per row in an arrowless diagram
 
+# A card's shape, by kind, past the default rounded box.
+SHAPE = {'module':    'shape=box style="rounded,filled"',
+         'folder':    'shape=folder style=filled',
+         'aggregate': 'shape=box style="rounded,filled" penwidth=1.6'}
+
 
 def dot(g, wrap=WRAP, layout=Layout()):
-    ids = {i: f'n{k}' for k, i in enumerate(g.nodes)}
+    card_id = {i: f'n{k}' for k, i in enumerate(g.nodes)}
     hue, drawn, tree = hues(g), arrows(g), boxes(g)
-    index = {b.id: b for b in walk(tree) if b.kind == 'category'}
+    box_of = {b.id: b for b in walk(tree) if b.kind == 'category'}
     cluster = {}
 
     def card(i):
@@ -22,19 +32,16 @@ def dot(g, wrap=WRAP, layout=Layout()):
             label += f'<br/><font point-size="9" color="{QUIET}">{html.escape(sub)}</font>'
         attrs = [f'label=<{label}>', f'fillcolor="{fill}"',
                  f'color="{hue.get(i, line)}"']
-        if n.kind == 'module':
-            attrs.append('shape=box style="rounded,filled"')
-        if n.kind == 'folder':
-            attrs.append('shape=folder style=filled')
-        if n.kind == 'aggregate':
-            attrs.append('shape=box style="rounded,filled" penwidth=1.6')
+        if n.kind in SHAPE:
+            attrs.append(SHAPE[n.kind])
         if n.kind == 'category' and n.status == 'orphan':
             attrs.append('penwidth=2.5')
         if n.kind == 'category' and n.status == 'by-module':
             attrs.append('style="rounded,filled,dashed"')
-        return f'{ids[i]} [{" ".join(attrs)}];'
+        return f'{card_id[i]} [{" ".join(attrs)}];'
 
-    def emit(b, pad):
+    def container(b, pad):
+        """A box as a cluster, its cards and nested clusters inside."""
         if not (b.items or b.subs):
             return []
         name = cluster[b.id] = f'cluster_{len(cluster)}'
@@ -52,21 +59,21 @@ def dot(g, wrap=WRAP, layout=Layout()):
                f'color="{line}"; penwidth={2.5 if alert else 1.2}; margin=14;']
         out += [f'{pad}    {card(m)}' for m in b.items]
         if not drawn:
-            out += [f'{pad}    {ids[x]} -> {ids[y]} [style=invis];'
+            out += [f'{pad}    {card_id[x]} -> {card_id[y]} [style=invis];'
                     for x, y in zip(b.items, b.items[GRID:])]
         for s in b.subs:
-            out += emit(s, pad + '    ')
+            out += container(s, pad + '    ')
         return out + [f'{pad}}}']
 
     def edge(src, dst, attrs):
-        """An edge whose ends may be boxes: drawn to the box's first node
+        """An edge whose ends may be boxes: drawn to the box's first card
         and clipped at the box (compound=true)."""
         attrs = list(attrs)
-        if src in index:
+        if src in box_of:
             attrs.append(f'ltail={cluster[src]}')
-        if dst in index:
+        if dst in box_of:
             attrs.append(f'lhead={cluster[dst]}')
-        a, b = ids[rep(src, index)], ids[rep(dst, index)]
+        a, b = card_id[anchor(src, box_of)], card_id[anchor(dst, box_of)]
         return f'    {a} -> {b}' + (f' [{" ".join(attrs)}];' if attrs else ';')
 
     # With no arrows (areas and their categories only) a left-to-right layout
@@ -81,18 +88,18 @@ def dot(g, wrap=WRAP, layout=Layout()):
              f'    edge [color="{LINE}" fontname="Helvetica" fontsize=9 fontcolor="{QUIET}" '
              f'arrowsize=0.7];']
     for b in tree:
-        lines += emit(b, '    ')
+        lines += container(b, '    ')
     inside = {m for b in walk(tree) for m in b.items}
     lines += [f'    {card(i)}' for i, n in g.nodes.items()
-              if i not in inside and i not in index and n.kind != 'area']
-    lines += [f'    {ids[a]} -> {ids[b]} [style=invis minlen={minlen}];'
+              if i not in inside and i not in box_of and n.kind != 'area']
+    lines += [f'    {card_id[a]} -> {card_id[b]} [style=invis minlen={minlen}];'
               for a, b, minlen in layout_links(g, wrap, layout)]
     if hosts_view(g):
         # One row of hosts. Without it a host whose imports all sit in a
         # lower wrapped row is pulled down to them -- Graphviz shortens
         # edges, it does not keep rows.
         lines.append('    { rank=same; ' + ' '.join(
-            ids[i] for i, n in g.nodes.items() if n.kind == 'aggregate') + ' }')
+            card_id[i] for i, n in g.nodes.items() if n.kind == 'aggregate') + ' }')
     for e in drawn:
         if e.kind == 'contains':
             nested = g.nodes[e.dst].kind == 'category'

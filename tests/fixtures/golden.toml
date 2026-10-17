@@ -1,0 +1,6 @@
+# The layout the saved outputs in tests/expected/golden/ are drawn with.
+[layout]
+top    = ["hosts-config", "users"]
+behind = ["hosts-config"]
+far    = ["users"]
+shared = ["shared"]

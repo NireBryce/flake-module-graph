@@ -3,12 +3,22 @@
 
     inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # For readers new to Nix: everything below is what `nix` commands find in
+    # this repository. Each output is built once per system in `systems`:
+    #   packages   `nix build`, or `nix profile install`: the module-graph command
+    #   apps       `nix run . -- <args>`: runs that command
+    #   devShells  `nix develop`: a shell with python3, just, graphviz, chromium
+    #   checks     `nix flake check`: the unit tests and a run of the command
+    # The tool itself is plain Python (module_graph/); Nix only packages it.
     outputs = { self, nixpkgs }:
         let
             inherit (nixpkgs) lib;
             systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+            # forAll f = { x86_64-linux = f pkgs-for-x86_64-linux; ... }
             forAll  = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
+            # Only these files are copied into the Nix store, so editing the
+            # README doesn't rebuild the command.
             src   = lib.fileset.toSource { root = ./.; fileset = ./module_graph; };
             tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [ ./module_graph ./tests ]; };
         in

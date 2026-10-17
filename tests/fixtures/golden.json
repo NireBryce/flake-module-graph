@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "classes": [
+    "nixos",
+    "homeManager",
+    "darwin"
+  ],
+  "categories": {
+    "laptop": {
+      "dir": "hosts-config/laptop",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "base": {
+      "dir": "shared/base",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "net": {
+      "dir": "shared/base/net",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "desktop": {
+      "dir": "shared/desktop",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "games": {
+      "dir": "shared/desktop/apps/games",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "extras": {
+      "dir": "shared/extras",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "fonts": {
+      "dir": "shared/fonts",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "printing": {
+      "dir": "shared/printing",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "lonely": {
+      "dir": "shared/lonely",
+      "members": [],
+      "nested": [],
+      "flag": null
+    },
+    "shell": {
+      "dir": "users/me/shell",
+      "members": [],
+      "nested": [],
+      "flag": null
+    }
+  },
+  "folders": [],
+  "modules": {
+    "hardware": {
+      "path": "hosts-config/laptop/hardware.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "locale": {
+      "path": "shared/base/locale.nix",
+      "classes": [
+        "nixos",
+        "darwin"
+      ]
+    },
+    "turn-on": {
+      "path": "shared/base/turn-on.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "ssh": {
+      "path": "shared/base/net/ssh.nix",
+      "classes": [
+        "nixos",
+        "homeManager"
+      ]
+    },
+    "wm": {
+      "path": "shared/desktop/wm.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "browser": {
+      "path": "shared/desktop/apps/browser.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "chess": {
+      "path": "shared/desktop/apps/games/chess.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "editor": {
+      "path": "shared/extras/editor.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "other": {
+      "path": "shared/extras/other.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "mono": {
+      "path": "shared/fonts/mono.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "cups": {
+      "path": "shared/printing/cups.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "unused": {
+      "path": "shared/lonely/unused.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "zsh": {
+      "path": "users/me/shell/zsh.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "laptop-host": {
+      "path": "hosts/laptop.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "server": {
+      "path": "hosts/server.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "mac": {
+      "path": "hosts/mac.nix",
+      "classes": [
+        "darwin"
+      ]
+    },
+    "me-home": {
+      "path": "users/me/home.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "overlay": {
+      "path": "overlay.nix",
+      "classes": [
+        "nixos"
+      ]
+    }
+  },
+  "includes": {
+    "laptop-host": {
+      "nixos": [
+        "laptop",
+        "base",
+        "desktop",
+        "fonts",
+        "printing",
+        "editor",
+        "ghost"
+      ]
+    },
+    "server": {
+      "nixos": [
+        "base",
+        "printing"
+      ]
+    },
+    "mac": {
+      "darwin": [
+        "base"
+      ]
+    },
+    "me-home": {
+      "homeManager": [
+        "shell",
+        "games"
+      ]
+    }
+  },
+  "enables": {
+    "turn-on": {
+      "homeManager": [
+        "me-home"
+      ]
+    }
+  },
+  "defaults": [],
+  "admin": []
+}
