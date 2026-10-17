@@ -9,6 +9,7 @@ Code comments follow the same spirit, shorter.
 |---|---|---|
 | `README.md` | someone arriving cold | what this is, a quick start, one example, links into `doc/` |
 | `doc/*.md` | someone looking something up | one topic per file, complete and exact |
+| `wiki/*.md` | someone using or changing it | guides, worked examples, reasoning, troubleshooting -- [`../wiki/styleguide.md`](../wiki/styleguide.md) |
 | `AGENTS.md` | an agent starting a session | what applies to every session, and where the rest is |
 | `.agents/skills/<name>/SKILL.md` | an agent doing one kind of task | that task's procedure and traps |
 

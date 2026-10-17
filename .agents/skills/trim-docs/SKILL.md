@@ -8,7 +8,7 @@ when_to_use: Asked to lint, tighten, trim, or make the docs more concise.
 
 ## Applies to
 
-Asked to "tighten", "trim" or "make more concise" `README.md`, `doc/`,
+Asked to "tighten", "trim" or "make more concise" `README.md`, `doc/`, `wiki/`,
 `.agents/skills/*/SKILL.md` or `AGENTS.md`. Not: fixing a stale fact
 (skill `docs-sync`), or code comments.
 

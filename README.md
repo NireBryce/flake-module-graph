@@ -8,6 +8,8 @@ It reads a **module-graph document** (JSON, format version 1) and never
 parses `.nix` files. [dirs-as-categories](https://github.com/NireBryce/dirs-as-categories)
 publishes one as `flake.moduleGraph`; any tool can write one
 ([the format](https://github.com/NireBryce/dirs-as-categories/blob/main/doc/format.md)).
+[wiki/using-the-tool.md](wiki/using-the-tool.md) walks through every view,
+reading the drawings, the interactive page and each error.
 
 ## Use
 

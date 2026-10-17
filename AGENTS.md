@@ -57,6 +57,8 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `module_graph/mermaid.py`, `dot.py`, `page.py`, `page.html` | the renderers |
 | `module_graph/document.py` | reading and checking a document |
 | `tests/` | unit tests, the browser check and its fixture |
+| `doc/style.md` | how all the docs are written |
+| `wiki/` | guides: `using-the-tool.md`; `styleguide.md` before adding a page |
 
 ## Testing discipline
 
