@@ -1,7 +1,16 @@
 name: check
 on:
   push:
+    branches: [main]          # a branch's pushes are checked through its PR
   pull_request:
+  workflow_dispatch:          # update-flake-lock.yml starts it on the PRs it opens
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}   # every merge to main keeps its run
+permissions:
+  contents: read
+# Actions are pinned by commit; Dependabot (.github/dependabot.yml) bumps
+# both the hash and the version comment.
 jobs:
   check:
     strategy:
@@ -9,22 +18,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
       - run: nix flake check
   preflight:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
-      - name: just preflight (unit tests, the page in headless Chromium, flake check)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+      - name: just preflight (unit tests, saved views, the page in headless Chromium, flake check, end to end)
         run: nix develop --command just preflight
-      # Pinned, so a push there can't turn this repository red: bump the
-      # revision on purpose, with any change the new graph needs here.
-      - name: end to end with the graph dirs-as-categories publishes
-        env:
-          DIRS_AS_CATEGORIES: github:NireBryce/dirs-as-categories/f2c44941d0cf4866cf25d1868c39bb04965dcd41
-        run: |
-          nix eval --json "$DIRS_AS_CATEGORIES#tests.main" --apply 'm: m.graph' > graph.json
-          nix run . -- hosts graph.json | grep -q 'enables'
-          nix run . -- html graph.json | grep -q '"title":"hm-agg"'

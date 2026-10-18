@@ -6,6 +6,8 @@ arrows, the invisible layout links, then the styles. The order matters:
 `linkStyle` colours arrows by their position among all links, so the
 layout links come after every arrow they must not shift.
 """
+import re
+
 from .layout import WRAP, Layout, arrows, boxes, hosts_view, layout_links, upward, walk
 from .look import ALERT, INK, LINE, PALETTE, QUIET, box_look, hues, parts, style
 
@@ -17,6 +19,26 @@ INIT = ('%%{init: {"theme": "base", "themeVariables": {"fontFamily": '
 # A card's shape, by kind: Mermaid's bracket pairs around the label.
 SHAPE = {'category': '({})', 'folder': '[{}]', 'module': '([{}])', 'aggregate': '[[{}]]',
          'missing': '{{{{{}}}}}', 'area': '[{}]'}
+
+
+# Mermaid's defaults (`maxTextSize`, `maxEdges`; read from mermaid 11.17.2):
+# past either, a viewer using them shows an error instead of the diagram.
+MAX_TEXT, MAX_EDGES = 50000, 500
+LINK = re.compile(r'^\s+\S+ (-->|-\.->|---|~{3,}|-\. enables \.->) \S+$', re.M)
+
+
+def warnings(text):
+    """What a viewer with Mermaid's default limits would refuse about `text`."""
+    out = []
+    if len(text) > MAX_TEXT:
+        out.append(f'this Mermaid diagram is {len(text)} characters; Mermaid refuses '
+                   f'more than {MAX_TEXT} by default')
+    links = len(LINK.findall(text))
+    if links > MAX_EDGES:
+        out.append(f'this Mermaid diagram has {links} links; Mermaid refuses '
+                   f'more than {MAX_EDGES} by default')
+    return [w + ' -- narrow it with --category, --depth or --categories-only, '
+            'or draw it with `dot` or `html`' for w in out]
 
 
 def esc(text):

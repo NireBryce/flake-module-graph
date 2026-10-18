@@ -1,0 +1,58 @@
+name: update flake.lock
+# Monthly: move nixpkgs forward and open a PR, which CI then checks like any
+# other. Landing it is still the usual review (skill `ship`).
+on:
+  schedule:
+    - cron: '17 6 3 * *'      # 06:17 UTC on the 3rd of each month
+  workflow_dispatch:
+permissions:
+  contents: write             # push the branch
+  pull-requests: write        # open the PR
+  actions: write              # start check.yml on it
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+      - name: nix flake update
+        shell: bash               # -eo pipefail: a failed update must fail, not pass through tee
+        run: nix flake update 2>&1 | tee update.log
+      - name: open or refresh the lock PR if the lock moved
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet flake.lock; then echo 'flake.lock is current'; exit 0; fi
+          # One branch for every lock update, force-pushed: a re-run, or a
+          # month whose PR is still open, refreshes that PR instead of
+          # failing to push or leaving a stale one behind.
+          branch=chore/flake-lock
+          today=$(date -u +%Y-%m-%d)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C "$branch"
+          git commit -q flake.lock -m 'chore: update flake.lock' -m "$(grep -v '^warning: ' update.log)"
+          git push --force -u origin "$branch"
+          {
+            # shellcheck disable=SC2016  # backticks are Markdown, not a command
+            echo 'Automated monthly `nix flake update`.'
+            echo
+            grep -v '^warning: ' update.log | sed 's/^/    /'
+            echo
+            echo 'CI (check.yml) decides: the saved views in tests/expected/golden/ must not move.'
+          } > body.md
+          title="chore: update flake.lock ($today)"
+          if [ -n "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr edit "$branch" --title "$title" --body-file body.md
+          else
+            # Needs Settings > Actions > General > "Allow GitHub Actions to
+            # create and approve pull requests"; without it the branch is
+            # still pushed, and a re-run once it is on opens the PR.
+            gh pr create --base main --head "$branch" --title "$title" --body-file body.md \
+              || { echo "::error::pushed $branch but could not open its PR: allow GitHub Actions to create pull requests, then re-run"; exit 1; }
+          fi
+          # A PR opened or pushed with this workflow's token starts no
+          # workflows of its own; a dispatch does, and its results show on
+          # the PR's commit.
+          gh workflow run check.yml --ref "$branch"

@@ -8,11 +8,13 @@ shape, so a wrong document fails with a message rather than a traceback.
 import json
 import subprocess
 
+from .errors import ModuleGraphError
+
 VERSION = 1
 
 
 def fail(msg):
-    raise SystemExit(f'error: module-graph document: {msg}')
+    raise ModuleGraphError(f'module-graph document: {msg}')
 
 
 def check(doc):

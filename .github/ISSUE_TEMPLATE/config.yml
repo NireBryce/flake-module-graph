@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: The module-graph document format
+    url: https://github.com/NireBryce/dirs-as-categories/blob/main/doc/format.md
+    about: What a document holds is dirs-as-categories' format; questions about it belong there.

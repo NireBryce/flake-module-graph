@@ -21,6 +21,7 @@ the [README](../README.md)'s notice before relying on it.
 - [The interactive page](#the-interactive-page)
 - [Without dirs-as-categories](#without-dirs-as-categories)
 - [Putting a drawing in docs](#putting-a-drawing-in-docs)
+- [Drawings built by Nix](#drawings-built-by-nix)
 - [When it refuses](#when-it-refuses)
 
 ## Quick facts
@@ -30,7 +31,7 @@ the [README](../README.md)'s notice before relying on it.
 | hosts and what they include, as Mermaid | `nix run github:NireBryce/flake-module-graph -- hosts --flake .` |
 | every category, folder and module | `… -- tree --flake .` |
 | Graphviz instead | `… -- dot --flake . --view hosts` |
-| a clickable page | `… -- html --flake . > modules.html` |
+| a clickable page | `… -- html -o modules.html` |
 | one category only | add `--category base` |
 | only categories | add `--categories-only` |
 | your areas placed | add `--config module-graph.toml` |
@@ -57,7 +58,12 @@ module-graph hosts graph.json                    # a file
 nix eval --json .#moduleGraph | module-graph hosts -   # stdin
 ```
 
-`--flake REF` without a `#` means `REF#moduleGraph`. The tool turns on
+`--flake REF` without a `#` means `REF#moduleGraph`. Given no document at
+all, the tool reads the flake in the current directory, if it has a
+`flake.nix`: `module-graph hosts` there is `module-graph hosts --flake .`.
+When something may be piped in, it says so on stderr (`note: no DOCUMENT
+given: reading the flake here (--flake .); to read stdin, give -`): piped
+input needs `-`. The tool turns on
 Nix's `nix-command` and `flakes` features for its own `nix eval`, so it works
 on a fresh Nix install; your own `nix` commands, like the stdin one above,
 still need them on. Writing the document to
@@ -196,17 +202,63 @@ doesn't know.
 
 ## Putting a drawing in docs
 
-Mermaid goes straight into Markdown:
+Mermaid goes straight into Markdown, but a drawing in docs is a copy of the
+tree, and copies drift. Put two markers where it goes, saying how to draw
+it -- `tree` or `hosts` and any filters:
 
-````markdown
-```mermaid
-<output of: module-graph tree --flake . --depth 1 --categories-only>
+```markdown
+<!-- module-graph: tree --depth 1 --categories-only -->
+<!-- /module-graph -->
 ```
-````
 
-Regenerate it whenever the tree changes -- a drawing in docs is a copy, and
-copies drift. A script that rewrites the block and a check that fails when
-it is stale keeps it honest.
+Then let the tool fill and refresh what is between them:
+
+```sh
+module-graph markdown --file README.md            # redraws every block; prints how many changed
+module-graph markdown --file README.md --check    # changes nothing; fails if any block is stale
+```
+
+The document comes from the command as usual (the flake here, a file,
+`--flake REF`), and `--config` applies to every block; `--file` repeats for
+several files. Filters go in each marker, not on the command line. Markers
+inside a fenced code block, like the one above, are examples and left
+alone, and a redrawn block keeps the file's line endings. `--check` in CI, or `lib.checkMarkdown` below, fails the
+build when someone changes the tree and forgets the docs.
+
+Mermaid refuses a diagram past its default limits -- 50,000 characters or
+500 links (mermaid 11.17.2's `maxTextSize` and `maxEdges`) -- and a viewer
+using those defaults shows an error instead. `tree` and `hosts` print a
+`warning:` on stderr when the drawing passes either; narrow it with
+`--category`, `--depth` or `--categories-only`, or use `dot` or `html`,
+which have no such limit.
+
+## Drawings built by Nix
+
+A flake that publishes `moduleGraph` can have Nix build its drawings, using
+its own nixpkgs (`pkgs`), through this flake's `lib`:
+
+```nix
+# outputs, with flake-module-graph as an input (README: As a flake input)
+packages.x86_64-linux.modules-html = flake-module-graph.lib.render {
+  inherit pkgs;
+  graph = self.moduleGraph;
+  view = "html";                     # or tree, hosts, dot
+  args = [ "--category" "base" ];    # filters, optional
+  config = ./module-graph.toml;      # layout, optional
+};
+
+checks.x86_64-linux.drawings = flake-module-graph.lib.checkMarkdown {
+  inherit pkgs;
+  graph = self.moduleGraph;
+  src = self;                        # where the files are
+  files = [ "README.md" ];           # relative to src
+};
+```
+
+`nix build .#modules-html` then writes `result`, the page; `nix flake check`
+fails, naming the file, when a block in `README.md` is stale. This
+repository's own `checks.render` and `checks.markdown` call both the same
+way, on `tests/fixtures/golden.json`.
 
 ## When it refuses
 
@@ -220,5 +272,11 @@ it is stale keeps it honest.
 | `… failed: flake '…' does not provide attribute … 'moduleGraph'` | the flake doesn't publish `moduleGraph` (dirs-as-categories does); name another attribute with `--flake REF#ATTR` |
 | `… failed: Path 'x.nix' in the repository "…" is not tracked by Git.` | a flake in a git repository sees only files git knows about: `git add` them (no commit needed) |
 | any other `… failed: …` | run the `nix eval --json` command the hint names to see Nix's whole error |
-| `error: give a DOCUMENT (a file, or - for stdin) or --flake REF` | nothing to draw |
+| `error: give a DOCUMENT (a file, or - for stdin) or --flake REF (no flake.nix here to read)` | nothing to draw, and no flake in the current directory to default to |
+| `error: graph.json: no such file` | the document (or `--config` file) isn't where the command says; likewise `Is a directory`, `Permission denied`, `not UTF-8 text`, and for `-o FILE` a folder that doesn't exist |
+| ``error: README.md: 1 of 2 drawings is stale; run `module-graph markdown --file README.md` to update them`` | `markdown --check` (or `lib.checkMarkdown`) found a block that no longer matches the tree |
+| ``error: README.md: line 3: no `<!-- /module-graph -->` after it`` | a marker without its closing marker; also a second marker before the first closes, a closing marker with none open, and an option a marker can't take, each named by its line |
+| ``error: README.md: no `<!-- module-graph: … -->` blocks`` | `markdown --file` found nothing to draw -- often a marker spelled differently, such as `<!--module-graph:` |
+| `error: module-graph.toml: not TOML (…)` | the layout file has a syntax error; the parser's message says where |
+| `warning: this Mermaid diagram is … characters; Mermaid refuses more than 50000 by default …` | the drawing is still printed, but may not render; see [Putting a drawing in docs](#putting-a-drawing-in-docs) |
 | `error: no category 'nope'; categories: …` | `--category` named something that isn't a category |

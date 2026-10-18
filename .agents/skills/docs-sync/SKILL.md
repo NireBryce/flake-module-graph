@@ -32,8 +32,15 @@ file is a live pointer (skill `fact-hygiene`).
 - A history note ("until `<date>` X did Y") stays true; don't rewrite
   history, add to it.
 - New skill, doc or recipe: list it where `AGENTS.md` lists them.
+- A change a user can see -- a flag, a message, a drawing, the page, the
+  install -- adds a line under `CHANGELOG.md`'s `## Unreleased`, with
+  anything it breaks under **Breaks**.
 
 ## Then
 
-`just preflight`. Say in the commit message which docs moved with the
+`just preflight`. Its unit tests include `tests/test_docs.py`, which fails
+on a dangling link or `#anchor`, a flag the command no longer has, a wiki
+page off the style guide, or a README drawing gone stale -- the mechanical
+half of this skill. The grep above is still yours: a stale *sentence*
+passes every test. Say in the commit message which docs moved with the
 code, so a reviewer can check the pair.

@@ -11,6 +11,53 @@ Draws a flake's modules tree: which categories exist, what sits in them, and
 which host includes what. Mermaid and Graphviz diagrams, and an interactive
 page where clicking hosts shows only what they reach.
 
+The hosts view of a small flake -- a laptop including the categories
+`base` and `desktop`, and the Home Manager configuration `me-home`
+including `shell`, which a module in `base` turns on (`enables`):
+
+<!-- module-graph: hosts -->
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart TB
+    subgraph g0["shared"]
+        n0("<b>base/</b><br/><i>n · 3</i>")
+        n1("<b>desktop/</b><br/><i>n · 1</i>")
+        n2("<b>shell/</b><br/><i>h · 2</i>")
+    end
+    subgraph g1["hosts and home"]
+        n6[["<b>laptop</b><br/><i>nixos</i>"]]
+        n7[["<b>me-home</b><br/><i>homeManager</i>"]]
+    end
+    n6 --> n0
+    n6 --> n1
+    n7 --> n2
+    n6 -. enables .-> n7
+    n6 ~~~ n0
+    n6 ~~~ n1
+    n6 ~~~ n2
+    linkStyle 0,1,3 stroke:#16a34a,stroke-width:1.5px
+    linkStyle 2 stroke:#d97706,stroke-width:1.5px
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#fefce8,stroke:#fde68a,color:#64748b
+    style n6 stroke:#16a34a,stroke-width:2px
+    style n7 stroke:#d97706,stroke-width:2px
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n0,n1,n2 category
+    class n6,n7 aggregate
+```
+<!-- /module-graph -->
+
+(The document is `tests/fixtures/example.json`, the example
+[wiki/using-the-tool.md](wiki/using-the-tool.md) uses; the unit tests fail
+when this drawing is stale.)
+
 It reads a **module-graph document** (JSON, format version 1) and never
 parses `.nix` files. [dirs-as-categories](https://github.com/NireBryce/dirs-as-categories)
 publishes one as `flake.moduleGraph`; any tool can write one
@@ -27,7 +74,7 @@ in the first command, or turn them on for good in `~/.config/nix/nix.conf`:
 
 ```sh
 nix run github:NireBryce/flake-module-graph -- hosts --flake .            # Mermaid, hosts view
-nix run github:NireBryce/flake-module-graph -- html --flake . > modules.html
+nix run github:NireBryce/flake-module-graph -- html -o modules.html          # the flake here, as a page
 nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- dot - --view hosts
 ```
 
@@ -37,14 +84,36 @@ nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- d
 | `hosts` | hosts and what they include, top-down (Mermaid) |
 | `dot` | either, as Graphviz (`--view tree\|hosts`) |
 | `html` | the hosts view as a self-contained interactive page |
+| `markdown` | redraws the drawings kept in a Markdown file (`--file`), or checks them (`--check`) |
 
 The document is a file, `-` for stdin, or `--flake REF` (runs
 `nix eval --json REF`, with flakes turned on for that command; a REF without
-`#` means `REF#moduleGraph`).
+`#` means `REF#moduleGraph`). With none of them, a `flake.nix` in the current
+directory is read as `--flake .`. `-o FILE` writes the drawing to FILE, and
+only once it has succeeded.
 
 Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the
 hosts view; 0 for one row).
+
+Releases are tagged `vX.Y.Z` and listed on the
+[releases page](https://github.com/NireBryce/flake-module-graph/releases). To
+pin one instead of following `main`, put its tag after the repository:
+`github:NireBryce/flake-module-graph/vX.Y.Z`. What each release changed, and
+what it breaks, is in [CHANGELOG.md](CHANGELOG.md).
+`module-graph --version` says which you have.
+
+### Without Nix
+
+The tool is Python 3.11 or newer and its standard library, nothing else:
+
+```sh
+pipx install git+https://github.com/NireBryce/flake-module-graph
+uvx --from git+https://github.com/NireBryce/flake-module-graph module-graph tree graph.json
+python3 -m module_graph tree graph.json          # from a clone
+```
+
+`--flake` still needs `nix` on `PATH`; a document file or stdin doesn't.
 
 ### As a flake input
 
@@ -120,7 +189,8 @@ behind  ->  hosts  ->  shared areas  <-  homes  ->  far
 ## Development
 
 ```sh
-nix flake check                 # unit tests, the packaged command
+nix flake check                 # unit tests (also on Python 3.11, the oldest supported), the packaged command
+just e2e                        # the packaged command on dirs-as-categories' published graph
 python3 -m unittest discover -s tests
 python3 tests/golden.py         # every view against tests/expected/golden/ (--update)
 python3 tests/browser.py        # the page in headless Chromium (chromium on PATH)

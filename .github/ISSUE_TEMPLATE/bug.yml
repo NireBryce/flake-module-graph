@@ -1,0 +1,35 @@
+name: Bug
+description: The tool drew something wrong, refused a good document, or crashed.
+labels: [bug]
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+      placeholder: nix run github:NireBryce/flake-module-graph -- hosts --flake .
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What it printed or drew. For a drawing, a screenshot or the output helps.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: document
+    attributes:
+      label: The document, if you can share it
+      description: "`nix eval --json .#moduleGraph > graph.json`, attached or pasted. Rename hosts and paths first if they are private."
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: "`module-graph --version` (or the revision you ran), and `nix --version` if you used --flake."
