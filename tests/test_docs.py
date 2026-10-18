@@ -152,7 +152,8 @@ class NamedInTheDocs(unittest.TestCase):
         for path in DOCS:
             if path.is_relative_to(SKILLS):
                 continue        # skills name git's and gh's flags
-            named = set(re.findall(r'(?<![\w-])--[a-z][a-z0-9-]+', path.read_text()))
+            # not after `<!`: an HTML comment such as `<!--module-graph:`
+            named = set(re.findall(r'(?<![\w!-])--[a-z][a-z0-9-]+', path.read_text()))
             with self.subTest(rel(path)):
                 self.assertEqual(named - flags, set(), 'not a flag of module-graph (or OTHER_FLAGS)')
 
