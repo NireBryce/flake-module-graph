@@ -549,6 +549,15 @@ class Documents(Tree):
         rc, out = self.cli('tree', '--flake', 'x', run=FakeNix({'x#moduleGraph': self.d.build()}))
         self.assertIn('used/', out)
 
+    def test_cli_says_its_version(self):
+        import module_graph
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as cm:
+            main(['--version'])
+        self.assertEqual((cm.exception.code, out.getvalue()),
+                         (0, f'module-graph {module_graph.__version__}\n'))
+        self.assertRegex(module_graph.__version__, r'^\d+\.\d+\.\d+$')
+
     def test_cli_needs_exactly_one_source(self):
         for argv in (['tree'], ['tree', 'DOC', '--flake', 'x']):
             with self.assertRaises(SystemExit):
