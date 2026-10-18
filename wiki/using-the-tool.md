@@ -59,7 +59,10 @@ nix eval --json .#moduleGraph | module-graph hosts -   # stdin
 
 `--flake REF` without a `#` means `REF#moduleGraph`. Given no document at
 all, the tool reads the flake in the current directory, if it has a
-`flake.nix`: `module-graph hosts` there is `module-graph hosts --flake .`. The tool turns on
+`flake.nix`: `module-graph hosts` there is `module-graph hosts --flake .`.
+When something may be piped in, it says so on stderr (`note: no DOCUMENT
+given: reading the flake here (--flake .); to read stdin, give -`): piped
+input needs `-`. The tool turns on
 Nix's `nix-command` and `flakes` features for its own `nix eval`, so it works
 on a fresh Nix install; your own `nix` commands, like the stdin one above,
 still need them on. Writing the document to
@@ -227,7 +230,7 @@ which have no such limit.
 | `… failed: Path 'x.nix' in the repository "…" is not tracked by Git.` | a flake in a git repository sees only files git knows about: `git add` them (no commit needed) |
 | any other `… failed: …` | run the `nix eval --json` command the hint names to see Nix's whole error |
 | `error: give a DOCUMENT (a file, or - for stdin) or --flake REF (no flake.nix here to read)` | nothing to draw, and no flake in the current directory to default to |
-| `error: graph.json: no such file` | the document (or `--config` file) isn't where the command says |
+| `error: graph.json: no such file` | the document (or `--config` file) isn't where the command says; likewise `Is a directory`, `Permission denied`, `not UTF-8 text`, and for `-o FILE` a folder that doesn't exist |
 | `error: module-graph.toml: not TOML (…)` | the layout file has a syntax error; the parser's message says where |
 | `warning: this Mermaid diagram is … characters; Mermaid refuses more than 50000 by default …` | the drawing is still printed, but may not render; see [Putting a drawing in docs](#putting-a-drawing-in-docs) |
 | `error: no category 'nope'; categories: …` | `--category` named something that isn't a category |
