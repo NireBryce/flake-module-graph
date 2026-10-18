@@ -111,6 +111,7 @@ class Builder:
         # are not drawn; their modules hang off the area.
         self.folders = sorted({d for m in self.modules for d in m.path.parents
                                if d not in self.category_at and self.in_category(d)})
+        self.is_folder = set(self.folders)     # parent() asks once per level per node
         # folder -> the modules anywhere under it, in path order. Built once:
         # asking each module "is this folder above you?" per folder took
         # minutes on a few thousand modules.
@@ -156,7 +157,7 @@ class Builder:
         for d in path.parents:
             if d in self.category_at:
                 return f'cat:{d}'
-            if d in self.folders:
+            if d in self.is_folder:
                 return f'dir:{d}'
         return self.area(path)
 

@@ -9,7 +9,7 @@
 The document is a file, `-` for stdin, or --flake REF to run
 `nix eval --json REF` (REF without `#` means REF#moduleGraph, as dirs-as-categories
 publishes it). With neither, a flake.nix in the current directory is read
-as --flake . --config FILE sets where areas go (layout.py); -o FILE writes
+as --flake . (say - to read stdin instead). --config FILE sets where areas go (layout.py); -o FILE writes
 the drawing there instead of stdout.
 """
 import argparse
@@ -20,7 +20,7 @@ import sys
 from . import document, markdown
 from .dot import dot
 from .layout import WRAP, Layout, load_layout
-from .errors import ModuleGraphError
+from .errors import ModuleGraphError, unreadable
 from .mermaid import mermaid, warnings
 from .model import graph, select
 from .page import page
@@ -38,7 +38,11 @@ def read(args, run):
             raise ModuleGraphError('give a DOCUMENT or --flake, not both')
         return document.from_flake(args.flake, run)
     if args.document is None:
-        if pathlib.Path('flake.nix').exists():
+        if pathlib.Path('flake.nix').is_file():
+            if not sys.stdin.isatty():
+                # something may be piped in, and `-` forgotten
+                print('note: no DOCUMENT given: reading the flake here (--flake .); '
+                      'to read stdin, give -', file=sys.stderr)
             return document.from_flake('.', run)
         raise ModuleGraphError('give a DOCUMENT (a file, or - for stdin) or --flake REF '
                                '(no flake.nix here to read)')
@@ -46,8 +50,8 @@ def read(args, run):
         return document.loads(sys.stdin.read())
     try:
         text = pathlib.Path(args.document).read_text()
-    except FileNotFoundError:
-        raise ModuleGraphError(f'{args.document}: no such file') from None
+    except (OSError, UnicodeDecodeError) as e:
+        raise unreadable(args.document, e) from None
     return document.loads(text)
 
 
@@ -73,6 +77,12 @@ def redraw_markdown(args, run):
     each --file, all from one read of the document."""
     if not args.file:
         raise ModuleGraphError('markdown needs --file FILE')
+    given = [flag for flag, on in (
+        ('--category', args.category is not None), ('--depth', args.depth is not None),
+        ('--categories-only', args.categories_only), ('--view', args.view != 'tree'),
+        ('--wrap', args.wrap != WRAP), ('-o', args.output is not None)) if on]
+    if given:
+        raise ModuleGraphError(f'markdown takes filters in each marker, not {", ".join(given)}')
     layout = load_layout(args.config) if args.config else Layout()
     model = graph(read(args, run))
 
@@ -83,9 +93,11 @@ def redraw_markdown(args, run):
     for name in args.file:
         path = pathlib.Path(name)
         try:
-            new, total, stale = markdown.rewrite(path.read_text(), draw)
-        except FileNotFoundError:
-            raise ModuleGraphError(f'{name}: no such file') from None
+            # newline='': read and write the file's own line endings
+            with open(path, newline='') as f:
+                new, total, stale = markdown.rewrite(f.read(), draw)
+        except (OSError, UnicodeDecodeError) as e:
+            raise unreadable(name, e) from None
         except ModuleGraphError as e:
             raise ModuleGraphError(f'{name}: {e}') from None
         if not stale:
@@ -95,7 +107,8 @@ def redraw_markdown(args, run):
                                f'{"is" if stale == 1 else "are"} stale; '
                                f'run `module-graph markdown --file {name}` to update them')
         else:
-            path.write_text(new)
+            with open(path, 'w', newline='') as f:
+                f.write(new)
             print(f'updated {name}: {plural(stale, "drawing")}')
     if stale_files:
         raise ModuleGraphError('\n'.join(stale_files))
@@ -125,17 +138,22 @@ def main(argv=None, run=subprocess.run):
     try:
         if args.cmd == 'markdown':
             return redraw_markdown(args, run)
+        if args.file or args.check:
+            raise ModuleGraphError('--file and --check are for `markdown`')
         text = draw(args, run)
+        if args.cmd in ('tree', 'hosts'):
+            for w in warnings(text):
+                print(f'warning: {w}', file=sys.stderr)
+        # written only now, so a failure leaves no empty or half-written file
+        if args.output:
+            try:
+                pathlib.Path(args.output).write_text(text + '\n')
+            except OSError as e:
+                raise unreadable(args.output, e) from None
+        else:
+            print(text)
     except ModuleGraphError as e:
         raise SystemExit(f'error: {e}') from None
-    if args.cmd in ('tree', 'hosts'):
-        for w in warnings(text):
-            print(f'warning: {w}', file=sys.stderr)
-    # written only now, so a failure leaves no empty or half-written file
-    if args.output:
-        pathlib.Path(args.output).write_text(text + '\n')
-    else:
-        print(text)
     return 0
 
 
