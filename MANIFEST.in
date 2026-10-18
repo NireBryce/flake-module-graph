@@ -1,0 +1,3 @@
+# The sdist is the package and its docs; the tests need fixtures and the
+# repository around them, so they stay in git.
+prune tests

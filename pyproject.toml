@@ -2,7 +2,7 @@
 # or `uvx --from git+https://github.com/NireBryce/flake-module-graph module-graph`.
 # The Nix package (flake.nix) doesn't use this file.
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]     # 77: `license` as an SPDX string (PEP 639)
 build-backend = "setuptools.build_meta"
 
 [project]

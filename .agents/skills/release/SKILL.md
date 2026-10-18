@@ -27,8 +27,9 @@ In a worktree (skill `use-a-worktree`), on `release/vX.Y.Z` from
 1. `__version__ = 'X.Y.Z'` in `module_graph/__init__.py`.
 2. In `CHANGELOG.md`, `## Unreleased` becomes `## X.Y.Z -- YYYY-MM-DD`
    (today), with a new empty `## Unreleased` above it. Read every line
-   under it against `git log vPREVIOUS..origin/main`: a user-visible change
-   without a line gets one, and each breaking change is under **Breaks**.
+   under it against `git log vPREVIOUS..origin/main` (the first release:
+   `git log origin/main`): a user-visible change without a line gets one,
+   and each breaking change is under **Breaks**.
 3. `just preflight`, then land it with skill `ship`.
 
 ## 2. Tag and publish -- only after the user says yes

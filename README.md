@@ -46,8 +46,9 @@ Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the
 hosts view; 0 for one row).
 
-Releases are tagged `vX.Y.Z` (none yet; the first will be `v0.1.0`). To pin
-one instead of following `main`, put its tag after the repository:
+Releases are tagged `vX.Y.Z` and listed on the
+[releases page](https://github.com/NireBryce/flake-module-graph/releases). To
+pin one instead of following `main`, put its tag after the repository:
 `github:NireBryce/flake-module-graph/vX.Y.Z`. What each release changed, and
 what it breaks, is in [CHANGELOG.md](CHANGELOG.md).
 `module-graph --version` says which you have.
@@ -138,11 +139,10 @@ behind  ->  hosts  ->  shared areas  <-  homes  ->  far
 ## Development
 
 ```sh
-nix flake check                 # unit tests, the packaged command
+nix flake check                 # unit tests (also on Python 3.11, the oldest supported), the packaged command
 python3 -m unittest discover -s tests
 python3 tests/golden.py         # every view against tests/expected/golden/ (--update)
 python3 tests/browser.py        # the page in headless Chromium (chromium on PATH)
-nix build .#checks.x86_64-linux.python311   # the unit tests on the oldest Python supported
 ```
 
 ## Licence
