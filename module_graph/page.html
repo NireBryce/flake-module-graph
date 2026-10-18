@@ -153,9 +153,16 @@
   .folder { border-radius: 3px; }
   .dashed { border-style: dashed !important; }
   .alert { border-width: 2.5px !important; }
-  .dots { display: flex; gap: 3px; justify-content: center; min-height: 7px; margin-top: 3px; }
+  .dots { display: flex; gap: 3px; justify-content: center; min-height: 14px; margin-top: 3px; }
   .box > .head .dots { margin-top: 0; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  /* A host's number in its hue's ring: on the host card, and as a dot on
+     each card it reaches. Dark on white, so it reads whatever the hue. */
+  .dot, .mark {
+    min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; border: 2px solid;
+    background: #ffffff; color: #1e293b; font: 700 9px/10px ui-sans-serif, system-ui, sans-serif;
+    text-align: center;
+  }
+  .mark { display: inline-block; margin-right: 6px; vertical-align: 1px; }
 
   .host {
     position: relative; z-index: 2;
@@ -282,7 +289,11 @@ function sourceGroup(parent, label, list, id) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "host"; b.dataset.id = source.id;
     b.style.borderColor = source.hue;
-    div("t", b, source.title); div("s", b, source.sub);
+    const title = div("t", b);
+    const mark = document.createElement("span");
+    mark.className = "mark"; mark.textContent = source.mark; mark.style.borderColor = source.hue;
+    title.append(mark, source.title);
+    div("s", b, source.sub);
     b.addEventListener("click", () => toggle(source.id));
     b.addEventListener("mouseenter", () => focusSource(source.id));
     b.addEventListener("mouseleave", () => focusSource(null));
@@ -325,7 +336,7 @@ const dash = document.createElement("i"); dash.className = "dash";
 enablesNote.append(dash, "enables (a module it imports turns it on)");
 legend.appendChild(enablesNote);
 const dotsNote = document.createElement("span");
-dotsNote.textContent = "dots: what reaches it";
+dotsNote.textContent = "numbers: which host reaches it (hover a host to follow its edges)";
 legend.appendChild(dotsNote);
 
 // ── markers: one arrowhead per source colour ────────────────────────────────
@@ -442,7 +453,7 @@ function apply(animate) {
     dots.replaceChildren();
     for (const source of dotted) {
       if (!reachOf.get(source.id).has(id)) continue;
-      const d = div("dot", dots); d.style.background = source.hue; d.title = source.title;
+      const d = div("dot", dots, source.mark); d.style.borderColor = source.hue; d.title = source.title;
     }
   }
   if (before) play(before); else drawEdges();

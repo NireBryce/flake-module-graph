@@ -637,6 +637,15 @@ class Page(Tree):
         self.assertNotEqual(hosts['alpha-configuration']['hue'], hosts['home']['hue'])
         self.assertEqual(d['imports'][hosts['home']['id']], ['cat:area/used/sub'])
 
+    def test_hosts_are_numbered_as_well_as_coloured(self):
+        # one hue per host can't be told apart by everyone: each also has a
+        # number, on its card and in the dots of what it reaches
+        d = self.data()
+        cards = d['hosts'] + d['homes']
+        self.assertEqual(sorted(c['mark'] for c in cards), [str(k + 1) for k in range(len(cards))])
+        by_hue = sorted(cards, key=lambda c: HUES.index(c['hue']))
+        self.assertEqual([c['mark'] for c in by_hue], [str(k + 1) for k in range(len(cards))])
+
     def test_a_name_no_module_declares_gets_a_not_found_area(self):
         areas = {a['title']: a for a in self.data()['areas']}
         self.assertEqual([c['title'] for c in areas['not found']['children']], ['ghost'])

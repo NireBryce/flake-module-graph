@@ -20,7 +20,8 @@ def page_data(g, layout=Layout()):
     its `place` (behind, beside, user --
     the far end -- or shared; shared ones in layout.shared's order, then the
     rest alphabetically), the hosts and the home configurations they enable
-    ("homes": aggregates another aggregate enables), each with its hue, what
+    ("homes": aggregates another aggregate enables), each with its hue and
+    number, what
     each imports, and which homes each host enables. A name a host includes
     that the document doesn't know goes in its own 'not found' area."""
     kids, hue = children_of(g), hues(g)
@@ -64,9 +65,14 @@ def page_data(g, layout=Layout()):
                       'sub': '', 'place': 'shared', 'children': [node(i) for i in missing]})
     enabled = {e.dst for e in g.edges if e.kind == 'enables'}
 
+    # Each host and home also gets a number, in hue order: shown on its card
+    # and in the dots of what it reaches, so they can be told apart without
+    # telling the hues apart.
+    mark = {a: str(k + 1) for k, a in enumerate(hue)}
+
     def card(a):
         title, sub = parts(g.nodes[a])
-        return {'id': a, 'title': title, 'sub': sub, 'hue': hue[a]}
+        return {'id': a, 'title': title, 'sub': sub, 'hue': hue[a], 'mark': mark[a]}
 
     hosts = [card(a) for a in hue if a not in enabled]
     homes = [card(a) for a in hue if a in enabled]

@@ -202,19 +202,22 @@
    "id": "agg:hosts/laptop.nix:nixos",
    "title": "laptop-host",
    "sub": "nixos",
-   "hue": "#16a34a"
+   "hue": "#16a34a",
+   "mark": "1"
   },
   {
    "id": "agg:hosts/mac.nix:darwin",
    "title": "mac",
    "sub": "darwin",
-   "hue": "#d97706"
+   "hue": "#d97706",
+   "mark": "2"
   },
   {
    "id": "agg:hosts/server.nix:nixos",
    "title": "server",
    "sub": "nixos",
-   "hue": "#9333ea"
+   "hue": "#9333ea",
+   "mark": "3"
   }
  ],
  "homes": [
@@ -222,7 +225,8 @@
    "id": "agg:users/me/home.nix:homeManager",
    "title": "me-home",
    "sub": "homeManager",
-   "hue": "#db2777"
+   "hue": "#db2777",
+   "mark": "4"
   }
  ],
  "imports": {
