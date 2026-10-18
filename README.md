@@ -153,8 +153,8 @@ nixpkgs. In a NixOS or home-manager module, the package is
 - **Modules** are white, even when a host names one: importable means a
   category.
 - **Hosts** (a module with `includes`, outside every category) get one hue
-  each, shared by their edges. A host's link to a home configuration it turns
-  on (`enables`) is dashed.
+  each, shared by their edges, and on the page a number too. A host's link
+  to a home configuration it turns on (`enables`) is dashed.
 - A category nothing reaches is outlined red; one reached only through a
   module named on its own is dashed. A name a host includes that doesn't
   exist is a red card.

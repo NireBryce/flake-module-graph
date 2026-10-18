@@ -101,7 +101,8 @@ module-graph dot --flake . --view hosts | nix shell nixpkgs#graphviz -c dot -Tsv
 A whole tree of a few hundred modules is unreadable. The options:
 
 - `--category NAME`: that category and what is nested in it. In the hosts
-  view, also only the hosts that include something in it.
+  view, also only the hosts that include something in it, and the category
+  stays inside its area's box.
 - `--depth N`: folder levels below the starting point.
 - `--categories-only`: leave out modules and plain folders.
 - `--wrap N` (hosts view): categories per row in a shared area; 0 for one
@@ -160,8 +161,10 @@ category or an alert.
 a browser. Clicking a host or home card shows only what it reaches -- what
 it includes, everything inside those categories, and, for a host, the home
 configurations it enables and what they reach. Click more cards to combine
-them, or "All hosts" to clear. Each card shows a coloured dot for every
-selected host that reaches it. The "Left to right" / "Top to bottom" button
+them, or "All hosts" to clear. Each host and home card has a number in
+its colour's ring, and every card shows those numbers for the selected
+hosts that reach it -- so the page reads without telling the colours apart.
+Hovering a host brings out its own edges. The "Left to right" / "Top to bottom" button
 switches direction. The selection and direction live in the URL, so a link
 reopens the same view: `modules.html#hosts=laptop&layout=lr`.
 

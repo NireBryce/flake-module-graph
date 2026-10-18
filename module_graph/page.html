@@ -100,8 +100,8 @@
     justify-content: center; align-items: flex-start; margin: 0 0 64px;
   }
   .row:last-child { margin-bottom: 0; }
-  /* homelab-config beside the hosts: before them in their row top-down,
-     after them in their column left to right. */
+  /* An area `beside` the hosts: before them in their row top-down, after
+     them in their column left to right. */
   #hosts > .area { order: -1; }
   #stage.lr #hosts > .area { order: 1; }
   /* The shared areas sit side by side across the flow, in their order, so
@@ -153,9 +153,16 @@
   .folder { border-radius: 3px; }
   .dashed { border-style: dashed !important; }
   .alert { border-width: 2.5px !important; }
-  .dots { display: flex; gap: 3px; justify-content: center; min-height: 7px; margin-top: 3px; }
+  .dots { display: flex; gap: 3px; justify-content: center; min-height: 14px; margin-top: 3px; }
   .box > .head .dots { margin-top: 0; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  /* A host's number in its hue's ring: on the host card, and as a dot on
+     each card it reaches. Dark on white, so it reads whatever the hue. */
+  .dot, .mark {
+    min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; border: 2px solid;
+    background: #ffffff; color: #1e293b; font: 700 9px/10px ui-sans-serif, system-ui, sans-serif;
+    text-align: center;
+  }
+  .mark { display: inline-block; margin-right: 6px; vertical-align: 1px; }
 
   .host {
     position: relative; z-index: 2;
@@ -188,7 +195,7 @@
 <script>
 "use strict";
 const DATA = /*@DATA@*/null;
-const S = DATA.style;
+const STYLE = DATA.style;      // the colour standard, for the legend (look.py)
 
 // ── the model, indexed ──────────────────────────────────────────────────────
 // "Sources" are the clickable cards: the hosts, and the Home Manager configs
@@ -239,16 +246,15 @@ function div(cls, parent, text) {
   if (parent) parent.appendChild(el);
   return el;
 }
-function looks(node) {
-  // [fill, outline, extra classes] by the colour standard (module-graph.py PALETTE)
-  if (node.kind === "missing") return [...S.palette.missing, []];
-  const alert = node.merges || node.status === "orphan";
-  const [fill, line] = alert ? S.alert : S.palette[node.kind];
-  const extra = [];
-  if (alert) extra.push("alert");
-  if (node.status === "by-module") extra.push("dashed");
-  return [node.children && node.kind === "category" ? (alert ? S.alert[0] : S.boxFill) : fill, line, extra];
+// A card's or box's classes and colours: page_data() decides them (`look`),
+// from the same colour standard as every other renderer.
+function styled(el, look) {
+  if (look.alert) el.classList.add("alert");
+  if (look.dashed) el.classList.add("dashed");
+  el.style.background = look.fill; el.style.borderColor = look.line;
 }
+// One node of an area's tree: an area, a box (a node holding others), or a
+// card; then its children inside it.
 function build(node, parent) {
   let el, inner;
   if (node.kind === "area") {
@@ -256,18 +262,16 @@ function build(node, parent) {
     div("label", el, node.title);
     inner = div("body", el);
   } else if (node.children) {
-    const [fill, line, extra] = looks(node);
-    el = div(["box", ...extra].join(" "), parent);
-    el.style.background = fill; el.style.borderColor = line;
+    el = div("box", parent);
+    styled(el, node.look);
     const head = div("head", el);
     div("t", head, node.title);
     if (node.sub) div("s", head, node.sub);
     dotEls.set(node.id, div("dots", head));
     inner = div("body", el);
   } else {
-    const [fill, line, extra] = looks(node);
-    el = div(["card", node.kind === "folder" ? "folder" : "", ...extra].join(" ").trim(), parent);
-    el.style.background = fill; el.style.borderColor = line;
+    el = div(node.kind === "folder" ? "card folder" : "card", parent);
+    styled(el, node.look);
     div("t", el, node.title);
     if (node.sub) div("s", el, node.sub);
     dotEls.set(node.id, div("dots", el));
@@ -285,7 +289,12 @@ function sourceGroup(parent, label, list, id) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "host"; b.dataset.id = source.id;
     b.style.borderColor = source.hue;
-    div("t", b, source.title); div("s", b, source.sub);
+    const title = div("t", b);
+    const mark = document.createElement("span");
+    mark.className = "mark"; mark.textContent = source.mark; mark.style.borderColor = source.hue;
+    mark.setAttribute("aria-hidden", "true");     // the name says which host it is
+    title.append(mark, source.title);
+    div("s", b, source.sub);
     b.addEventListener("click", () => toggle(source.id));
     b.addEventListener("mouseenter", () => focusSource(source.id));
     b.addEventListener("mouseleave", () => focusSource(null));
@@ -313,10 +322,10 @@ const hostIds = new Set(DATA.hosts.map(h => h.id));
 
 const legend = document.getElementById("legend");
 for (const [label, fill, line, cls] of [
-  ["importable category", S.palette.category[0], S.palette.category[1], ""],
-  ["category holding categories", S.boxFill, S.palette.category[1], ""],
-  ["module", S.palette.module[0], S.palette.module[1], ""],
-  ["no host imports it", S.alert[0], S.alert[1], "alert"],
+  ["importable category", STYLE.palette.category[0], STYLE.palette.category[1], ""],
+  ["category holding categories", STYLE.boxFill, STYLE.palette.category[1], ""],
+  ["module", STYLE.palette.module[0], STYLE.palette.module[1], ""],
+  ["no host imports it", STYLE.alert[0], STYLE.alert[1], "alert"],
 ]) {
   const item = document.createElement("span");
   const sw = document.createElement("i");
@@ -328,7 +337,7 @@ const dash = document.createElement("i"); dash.className = "dash";
 enablesNote.append(dash, "enables (a module it imports turns it on)");
 legend.appendChild(enablesNote);
 const dotsNote = document.createElement("span");
-dotsNote.textContent = "dots: what reaches it";
+dotsNote.textContent = "numbers: which host reaches it (hover a host to follow its edges)";
 legend.appendChild(dotsNote);
 
 // ── markers: one arrowhead per source colour ────────────────────────────────
@@ -443,10 +452,14 @@ function apply(animate) {
   const dotted = dotSources();
   for (const [id, dots] of dotEls) {
     dots.replaceChildren();
-    for (const source of dotted) {
-      if (!reachOf.get(source.id).has(id)) continue;
-      const d = div("dot", dots); d.style.background = source.hue; d.title = source.title;
+    const by = dotted.filter(source => reachOf.get(source.id).has(id));
+    for (const source of by) {
+      const d = div("dot", dots, source.mark); d.style.borderColor = source.hue; d.title = source.title;
+      d.setAttribute("aria-hidden", "true");
     }
+    // the numbers are for eyes; a screen reader hears the names
+    if (by.length) dots.setAttribute("aria-label", "reached by " + by.map(s => s.title).join(", "));
+    else dots.removeAttribute("aria-label");
   }
   if (before) play(before); else drawEdges();
   document.body.dataset.selected = sources.filter(s => selected.has(s.id)).map(s => s.title).join(",");
@@ -478,36 +491,25 @@ function play(before) {
 }
 
 // ── edges ───────────────────────────────────────────────────────────────────
-// Forward or backward by where the two ends actually are along the flow:
-// forward leaves the source's far side for the target's near side; backward
-// (a host into its own directory, Home Manager into the user directory it
-// imports) leaves the near side for the target's far side.
+// An edge is one S-curve between the two cards' facing sides. Which sides:
+// along the flow, the ones across it (bottom to top top-down, right to left
+// left to right); but when the two cards share a band across the flow -- an
+// area `beside` the hosts -- the edge runs sideways, between the sides along
+// it. Whether it runs forward or backward is read from where the two ends
+// actually are, so an edge against the flow (a host into its own directory,
+// a home into the user directory it imports) bends the other way.
 function edgePath(a, b, stage) {
-  // Beside: the two ends share a band across the flow (homelab-config next
-  // to the hosts), so the edge runs sideways between them.
-  const besideTB = !leftToRight && b.bottom > a.top && b.top < a.bottom;
-  const besideLR = leftToRight && b.right > a.left && b.left < a.right;
-  if (besideTB) {
-    const left = b.left + b.width / 2 < a.left + a.width / 2;
-    const x1 = (left ? a.left : a.right) - stage.left, x2 = (left ? b.right : b.left) - stage.left;
-    const y1 = a.top + a.height / 2 - stage.top, y2 = b.top + b.height / 2 - stage.top;
-    const bend = (x2 - x1) / 2;
-    return `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`;
-  }
-  if (besideLR) {
-    const up = b.top + b.height / 2 < a.top + a.height / 2;
-    const x1 = a.left + a.width / 2 - stage.left, x2 = b.left + b.width / 2 - stage.left;
-    const y1 = (up ? a.top : a.bottom) - stage.top, y2 = (up ? b.bottom : b.top) - stage.top;
-    const bend = (y2 - y1) / 2;
-    return `M${x1},${y1} C${x1},${y1 + bend} ${x2},${y2 - bend} ${x2},${y2}`;
-  }
-  if (leftToRight) {
+  const beside = leftToRight ? b.right > a.left && b.left < a.right
+                             : b.bottom > a.top && b.top < a.bottom;
+  if (leftToRight !== beside) {
+    // leaves through a left or right side; bends horizontally
     const back = b.left + b.width / 2 < a.left + a.width / 2;
     const x1 = (back ? a.left : a.right) - stage.left, x2 = (back ? b.right : b.left) - stage.left;
     const y1 = a.top + a.height / 2 - stage.top, y2 = b.top + b.height / 2 - stage.top;
     const bend = (x2 - x1) / 2;
     return `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`;
   }
+  // leaves through the top or bottom; bends vertically
   const back = b.top + b.height / 2 < a.top + a.height / 2;
   const x1 = a.left + a.width / 2 - stage.left, x2 = b.left + b.width / 2 - stage.left;
   const y1 = (back ? a.top : a.bottom) - stage.top, y2 = (back ? b.bottom : b.top) - stage.top;
@@ -515,7 +517,7 @@ function edgePath(a, b, stage) {
   return `M${x1},${y1} C${x1},${y1 + bend} ${x2},${y2 - bend} ${x2},${y2}`;
 }
 // A route around the outside of the graph. It first clears the whole hosts
-// group -- homelab-config beside the hosts included -- then runs along a lane
+// group -- any area beside the hosts included -- then runs along a lane
 // outside everything drawn, then turns into the target from outside.
 // `side` < 0 is over the top (left to right) or down the left (top-down),
 // > 0 the other edge; `lane` spaces the routes on one side apart, both the

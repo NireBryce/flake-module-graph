@@ -34,3 +34,7 @@ version 1 (dirs-as-categories' `doc/format.md`).
 - `markdown --file FILE [--check]` keeps Mermaid drawings in Markdown
   current between `<!-- module-graph: … -->` markers; `lib.render` and
   `lib.checkMarkdown` do the same from another flake, with its nixpkgs.
+- On the page, each host has a number as well as a colour, on its card
+  and in the dots of everything it reaches; screen readers hear the names.
+- `--category` in the hosts view keeps the category inside its area, so
+  `html --category X` draws X instead of an empty page.

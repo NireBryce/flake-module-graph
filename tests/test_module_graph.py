@@ -246,6 +246,21 @@ class Selecting(Tree):
         self.assertEqual({n.label for n in g.nodes.values() if n.kind == 'aggregate'},
                          {'beta-configuration'})
 
+    def test_hosts_view_category_filter_keeps_the_area_around_it(self):
+        # the page lays out areas: without its area, --category drew nothing
+        g = select(self.g(), 'hosts', category='sub')
+        self.assertIn('area:area', g.nodes)
+        self.assertIn(('area:area', 'cat:area/used/sub'), self.kinds(g, 'contains'))  # used is not in range
+        (area,) = pg.page_data(g)['areas']
+        self.assertEqual([c['id'] for c in area['children']], ['cat:area/used/sub'])
+
+    def test_category_filter_leaves_out_a_named_module_from_elsewhere(self):
+        self.d.category('area/other')
+        self.d.module('area/other/picked.nix', 'nixos')
+        self.d.host('hosts/alpha-configuration.nix', 'nixos', 'used', 'picked')
+        self.assertNotIn('mod:area/other/picked.nix', select(self.g(), 'hosts', category='used').nodes)
+        self.assertIn('mod:area/other/picked.nix', select(self.g(), 'hosts', category='other').nodes)
+
     def test_hosts_view_draws_a_module_a_host_names(self):
         self.d.category('area/never-whole')
         self.d.module('area/never-whole/picked.nix', 'nixos')
@@ -688,9 +703,37 @@ class Page(Tree):
         self.assertNotEqual(hosts['alpha-configuration']['hue'], hosts['home']['hue'])
         self.assertEqual(d['imports'][hosts['home']['id']], ['cat:area/used/sub'])
 
+    def test_hosts_are_numbered_as_well_as_coloured(self):
+        # one hue per host can't be told apart by everyone: each also has a
+        # number, on its card and in the dots of what it reaches
+        d = self.data()
+        cards = d['hosts'] + d['homes']
+        self.assertEqual(sorted(c['mark'] for c in cards), [str(k + 1) for k in range(len(cards))])
+        by_hue = sorted(cards, key=lambda c: HUES.index(c['hue']))
+        self.assertEqual([c['mark'] for c in by_hue], [str(k + 1) for k in range(len(cards))])
+
     def test_a_name_no_module_declares_gets_a_not_found_area(self):
         areas = {a['title']: a for a in self.data()['areas']}
         self.assertEqual([c['title'] for c in areas['not found']['children']], ['ghost'])
+
+    def test_each_card_and_box_carries_its_look(self):
+        # the page draws what look.py decides; it decides no colour itself
+        self.d.category('area/lonely')
+        self.d.module('area/lonely/l.nix', 'nixos')
+        cards = {}
+
+        def walk(n):
+            cards[n['id']] = n.get('look')
+            for c in n.get('children', []):
+                walk(c)
+        for a in self.data()['areas']:
+            walk(a)
+        self.assertEqual(cards['cat:area/used'],          # holds sub: a box
+                         {'fill': BOX_FILL, 'line': PALETTE['category'][1], 'alert': False, 'dashed': False})
+        self.assertEqual(cards['cat:area/lonely'],
+                         {'fill': ALERT[0], 'line': ALERT[1], 'alert': True, 'dashed': False})
+        self.assertEqual(cards['missing:ghost']['fill'], PALETTE['missing'][0])
+        self.assertIsNone(cards['area:area'])              # an area is a container, not a card
 
     def test_style_comes_from_the_python_palette(self):
         style_ = self.data()['style']

@@ -36,6 +36,7 @@ CASES = {                                   # file name -> command line
     'tree-categories-only.dot': ['dot', FIXTURE, '--categories-only'],
     'hosts.dot':                ['dot', FIXTURE, '--view', 'hosts', *CONFIG],
     'page-data.json':           ['html', FIXTURE, *CONFIG],
+    'page-data-base.json':      ['html', FIXTURE, *CONFIG, '--category', 'base'],
 }
 
 

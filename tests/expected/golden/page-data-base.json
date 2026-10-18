@@ -1,0 +1,114 @@
+{
+ "areas": [
+  {
+   "id": "area:shared",
+   "kind": "area",
+   "title": "shared",
+   "sub": "",
+   "children": [
+    {
+     "id": "cat:shared/base",
+     "kind": "category",
+     "title": "base/",
+     "sub": "n h d \u00b7 3",
+     "status": "imported",
+     "look": {
+      "fill": "#eff6ff",
+      "line": "#2563eb",
+      "alert": false,
+      "dashed": false
+     },
+     "children": [
+      {
+       "id": "cat:shared/base/net",
+       "kind": "category",
+       "title": "net/",
+       "sub": "n h \u00b7 1",
+       "status": "inherited",
+       "look": {
+        "fill": "#dbeafe",
+        "line": "#2563eb",
+        "alert": false,
+        "dashed": false
+       }
+      }
+     ]
+    }
+   ],
+   "place": "shared"
+  }
+ ],
+ "hosts": [
+  {
+   "id": "agg:hosts/laptop.nix:nixos",
+   "title": "laptop-host",
+   "sub": "nixos",
+   "hue": "#16a34a",
+   "mark": "1"
+  },
+  {
+   "id": "agg:hosts/mac.nix:darwin",
+   "title": "mac",
+   "sub": "darwin",
+   "hue": "#d97706",
+   "mark": "2"
+  },
+  {
+   "id": "agg:hosts/server.nix:nixos",
+   "title": "server",
+   "sub": "nixos",
+   "hue": "#9333ea",
+   "mark": "3"
+  }
+ ],
+ "homes": [],
+ "imports": {
+  "agg:hosts/laptop.nix:nixos": [
+   "cat:shared/base"
+  ],
+  "agg:hosts/mac.nix:darwin": [
+   "cat:shared/base"
+  ],
+  "agg:hosts/server.nix:nixos": [
+   "cat:shared/base"
+  ]
+ },
+ "enables": {
+  "agg:hosts/laptop.nix:nixos": [],
+  "agg:hosts/mac.nix:darwin": [],
+  "agg:hosts/server.nix:nixos": []
+ },
+ "style": {
+  "palette": {
+   "area": [
+    "#f8fafc",
+    "#cbd5e1"
+   ],
+   "category": [
+    "#dbeafe",
+    "#2563eb"
+   ],
+   "folder": [
+    "#f1f5f9",
+    "#94a3b8"
+   ],
+   "module": [
+    "#ffffff",
+    "#94a3b8"
+   ],
+   "aggregate": [
+    "#ffffff",
+    "#f59e0b"
+   ],
+   "missing": [
+    "#fee2e2",
+    "#ef4444"
+   ]
+  },
+  "alert": [
+   "#fff1f2",
+   "#e11d48"
+  ],
+  "boxFill": "#eff6ff"
+ }
+}
