@@ -45,3 +45,6 @@ body loads in full once the skill fires, so detail there costs nothing.
 - One fact in one place: point to the file that owns a fact rather than
   restating it (skill `docs-sync`).
 - Register it: `AGENTS.md`'s skill list names every skill.
+- `just test` checks the mechanical rules above (`tests/test_docs.py`:
+  keys, quotes, `: ` and ` #`, length, `## Applies to`, the AGENTS.md
+  listing); the wording is still yours.

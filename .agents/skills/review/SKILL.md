@@ -27,8 +27,8 @@ step before saying "done".
 - **`tests/expected/browser.json` changed** without the new counts explained
   against the fixture.
 - **Mermaid or Graphviz layout changes** that reintroduce a trap
-  `change-the-drawing` lists (reversed arrows, invisible-link cycles,
-  floating cards).
+  `wiki/changing-the-drawing.md` lists (reversed arrows, invisible-link
+  cycles, floating cards).
 - **`document.py` accepting a version it doesn't know**, or rejecting a
   field it doesn't read.
 - **A behaviour without a test that failed first.**

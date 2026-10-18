@@ -21,7 +21,10 @@
             # Only these files are copied into the Nix store, so editing the
             # README doesn't rebuild the command.
             src   = lib.fileset.toSource { root = ./.; fileset = ./module_graph; };
-            tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [ ./module_graph ./tests ]; };
+            # The tests read the docs too (tests/test_docs.py).
+            tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [
+                ./module_graph ./tests ./README.md ./AGENTS.md ./CONTRIBUTING.md ./CHANGELOG.md ./doc ./wiki ./.agents
+            ]; };
 
             # The command, built from whichever nixpkgs `pkgs` is: this flake's
             # for `packages`, the caller's for `lib`. Python stdlib only.

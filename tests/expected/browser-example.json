@@ -1,0 +1,17 @@
+{
+  "": {
+    "selected": "",
+    "visible": "3",
+    "edges": "4"
+  },
+  "hosts=laptop": {
+    "selected": "laptop",
+    "visible": "3",
+    "edges": "4"
+  },
+  "hosts=me-home": {
+    "selected": "me-home",
+    "visible": "1",
+    "edges": "1"
+  }
+}
