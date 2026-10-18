@@ -23,7 +23,7 @@
             src   = lib.fileset.toSource { root = ./.; fileset = ./module_graph; };
             # The tests read the docs too (tests/test_docs.py).
             tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [
-                ./module_graph ./tests ./README.md ./AGENTS.md ./CONTRIBUTING.md ./doc ./wiki ./.agents
+                ./module_graph ./tests ./README.md ./AGENTS.md ./CONTRIBUTING.md ./CHANGELOG.md ./doc ./wiki ./.agents
             ]; };
 
             # The command, built from whichever nixpkgs `pkgs` is: this flake's

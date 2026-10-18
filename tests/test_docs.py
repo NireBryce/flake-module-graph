@@ -16,11 +16,11 @@ from module_graph.__main__ import main  # noqa: E402
 SKILLS = ROOT / '.agents' / 'skills'
 WIKI = ROOT / 'wiki'
 # Every Markdown file a reader can follow a link from.
-DOCS = sorted([ROOT / 'README.md', ROOT / 'AGENTS.md', ROOT / 'CONTRIBUTING.md',
+DOCS = sorted([ROOT / 'README.md', ROOT / 'AGENTS.md', ROOT / 'CONTRIBUTING.md', ROOT / 'CHANGELOG.md',
                *ROOT.glob('doc/*.md'), *WIKI.glob('*.md'), *SKILLS.glob('*/SKILL.md')])
 DOCS = [p for p in DOCS if p.exists()]
 # Flags of other commands (nix, uvx, tests/*.py) the docs may name.
-OTHER_FLAGS = {'--json', '--extra-experimental-features', '--override-input', '--update'}
+OTHER_FLAGS = {'--json', '--extra-experimental-features', '--override-input', '--update', '--from'}
 
 
 def rel(p):
