@@ -1,0 +1,95 @@
+{
+  "_comment": "The example wiki/using-the-tool.md describes: the tree dirs-as-categories' wiki/using-the-flake.md lays out, written by hand from it.",
+  "version": 1,
+  "classes": [
+    "nixos",
+    "homeManager"
+  ],
+  "categories": {
+    "base": {
+      "dir": "shared/base"
+    },
+    "shell": {
+      "dir": "shared/shell"
+    },
+    "desktop": {
+      "dir": "shared/desktop"
+    }
+  },
+  "modules": {
+    "laptop": {
+      "path": "hosts/laptop.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "me-home": {
+      "path": "users/me-home.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "defaults": {
+      "path": "shared/base/defaults.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "locale": {
+      "path": "shared/base/locale.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "ssh": {
+      "path": "shared/base/ssh/ssh.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "enable-home-manager": {
+      "path": "shared/base/home-manager/enable-home-manager.nix",
+      "classes": [
+        "nixos"
+      ]
+    },
+    "git": {
+      "path": "shared/shell/git/git.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "bash": {
+      "path": "shared/shell/bash/bash.nix",
+      "classes": [
+        "homeManager"
+      ]
+    },
+    "plasma": {
+      "path": "shared/desktop/plasma/plasma.nix",
+      "classes": [
+        "nixos"
+      ]
+    }
+  },
+  "includes": {
+    "laptop": {
+      "nixos": [
+        "base",
+        "desktop"
+      ]
+    },
+    "me-home": {
+      "homeManager": [
+        "shell"
+      ]
+    }
+  },
+  "enables": {
+    "enable-home-manager": {
+      "homeManager": [
+        "me-home"
+      ]
+    }
+  }
+}

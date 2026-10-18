@@ -43,7 +43,7 @@ format.
 
 ```sh
 just                 # list recipes
-just test            # unit tests
+just test            # unit tests, and the docs lint: frontmatter, wiki rules, links, flags, examples
 just golden          # every view against its saved output (`just golden --update`)
 just browser         # the page in headless Chromium (needs chromium: `nix develop`)
 just check           # nix flake check: unit tests and the packaged command
@@ -64,9 +64,10 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `flake.nix` `lib` | `render`, `checkMarkdown`: drawings and checks for other flakes |
 | `module_graph/document.py` | reading and checking a document |
 | `module_graph/errors.py` | `ModuleGraphError`: every mistake the package reports; only `__main__` exits |
-| `tests/` | unit tests, the saved views (`golden.py`), the browser check, their fixtures |
+| `tests/` | unit tests, the docs lint (`test_docs.py`), the saved views (`golden.py`), the browser check, their fixtures |
 | `doc/style.md` | how all the docs are written |
-| `wiki/` | guides: `using-the-tool.md`; `styleguide.md` before adding a page |
+| `wiki/` | guides: `using-the-tool.md`, `changing-the-drawing.md`; `styleguide.md` before adding a page |
+| `CONTRIBUTING.md` | the human entry point for changing the tool |
 
 ## Testing discipline
 

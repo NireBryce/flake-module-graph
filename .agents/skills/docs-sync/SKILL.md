@@ -35,5 +35,9 @@ file is a live pointer (skill `fact-hygiene`).
 
 ## Then
 
-`just preflight`. Say in the commit message which docs moved with the
+`just preflight`. Its unit tests include `tests/test_docs.py`, which fails
+on a dangling link or `#anchor`, a flag the command no longer has, a wiki
+page off the style guide, or a README drawing gone stale -- the mechanical
+half of this skill. The grep above is still yours: a stale *sentence*
+passes every test. Say in the commit message which docs moved with the
 code, so a reviewer can check the pair.

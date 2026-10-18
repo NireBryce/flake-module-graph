@@ -10,4 +10,5 @@ format is
 | Page | For |
 |---|---|
 | [Using the tool](using-the-tool.md) | getting a document, the four views, placement, reading the drawings, the interactive page, drawings kept in docs and built by Nix, troubleshooting |
+| [Changing the drawing](changing-the-drawing.md) | how the code fits together, its rules and traps, and how a change is checked |
 | [Wiki style guide](styleguide.md) | adding or changing a page here |
