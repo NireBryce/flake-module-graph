@@ -11,6 +11,10 @@ Every command runs the same four steps, one module each:
 
 __main__.py is the command line that joins them.
 """
+# The release this is, or will be: bumped by skill `release`, read by
+# pyproject.toml and `module-graph --version`.
+__version__ = '0.1.0'
+
 from .document import from_flake, loads
 from .dot import dot
 from .layout import Layout, load_layout

@@ -1,0 +1,10 @@
+# Bumps the commit-pinned actions in .github/workflows; flake.lock has its
+# own monthly workflow (update-flake-lock.yml).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci

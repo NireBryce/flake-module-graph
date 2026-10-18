@@ -32,6 +32,9 @@ file is a live pointer (skill `fact-hygiene`).
 - A history note ("until `<date>` X did Y") stays true; don't rewrite
   history, add to it.
 - New skill, doc or recipe: list it where `AGENTS.md` lists them.
+- A change a user can see -- a flag, a message, a drawing, the page, the
+  install -- adds a line under `CHANGELOG.md`'s `## Unreleased`, with
+  anything it breaks under **Breaks**.
 
 ## Then
 

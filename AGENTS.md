@@ -33,7 +33,10 @@ format.
 - **Say which rung you reached**: tests pass, the browser check passes, CI
   is green. Never more than you saw.
 - **A change that makes a doc stale fixes it in the same change** (skill
-  `docs-sync`).
+  `docs-sync`); one a user can see also adds a line under `CHANGELOG.md`'s
+  **Unreleased**.
+- **Never tag or publish a release** without the user saying so (skill
+  `release`).
 - **Examples are generic** -- `laptop`, `base`, `me` -- never anyone's real
   machines (`doc/style.md`).
 - **Trailer `Co-Authored-By: Claude`** on agent commits, name only; prose
@@ -46,8 +49,9 @@ just                 # list recipes
 just test            # unit tests
 just golden          # every view against its saved output (`just golden --update`)
 just browser         # the page in headless Chromium (needs chromium: `nix develop`)
-just check           # nix flake check: unit tests and the packaged command
-just preflight       # all of the above -- what CI runs
+just check           # nix flake check: unit tests (also on Python 3.11) and the packaged command
+just e2e             # the packaged command on dirs-as-categories' graph, at a pinned revision
+just preflight       # all of the above -- what CI runs; needs network (e2e)
 nix develop          # python3, just, graphviz; chromium on Linux
 nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 ```
@@ -81,6 +85,17 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
   refactor meant to change nothing leaves them byte for byte; a change
   meant to move the drawing has its `git diff` read before `--update`.
 
+## Maintenance that runs itself
+
+- `.github/workflows/update-flake-lock.yml`: on the 3rd of each month, a
+  `nix flake update` PR from branch `chore/flake-lock`, force-pushed, so an
+  open one is refreshed rather than duplicated. Review it like
+  any other: CI passing means the saved views didn't move.
+- `.github/dependabot.yml`: monthly PRs bumping the actions, which are
+  pinned by commit with the version in a comment.
+- The dirs-as-categories revision `just e2e` draws is pinned in `justfile`;
+  bump it by hand, on purpose.
+
 ## The contract with dirs-as-categories
 
 The document format is versioned (dirs-as-categories' `doc/format.md`).
@@ -94,6 +109,7 @@ to both repositories.
 |---|---|
 | `change-the-drawing` | changing the model, renderers, colours, page or layout |
 | `ship` | landing work on `main` |
+| `release` | a version, its changelog, tag and GitHub release |
 | `use-a-worktree` | branching work in isolation |
 | `review` | reviewing a change here |
 | `docs-sync` | keeping docs true in the same change |

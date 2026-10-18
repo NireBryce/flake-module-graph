@@ -1,0 +1,32 @@
+# For installing without Nix: `pipx install git+https://github.com/NireBryce/flake-module-graph`
+# or `uvx --from git+https://github.com/NireBryce/flake-module-graph module-graph`.
+# The Nix package (flake.nix) doesn't use this file.
+[build-system]
+requires = ["setuptools>=77"]     # 77: `license` as an SPDX string (PEP 639)
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flake-module-graph"
+dynamic = ["version"]
+description = "Draw a flake's modules tree: Mermaid, Graphviz, and an interactive page (experimental)"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "Nire Bryce" }]
+requires-python = ">=3.11"           # tomllib; checked by `checks.python311` in flake.nix
+dependencies = []                    # the standard library only
+classifiers = ["Development Status :: 3 - Alpha"]
+
+[project.urls]
+Source = "https://github.com/NireBryce/flake-module-graph"
+
+[project.scripts]
+module-graph = "module_graph.__main__:main"
+
+[tool.setuptools]
+packages = ["module_graph"]
+
+[tool.setuptools.package-data]
+module_graph = ["page.html"]
+
+[tool.setuptools.dynamic]
+version = { attr = "module_graph.__version__" }
