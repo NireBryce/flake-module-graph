@@ -12,13 +12,25 @@
      "title": "base/",
      "sub": "n h d \u00b7 3",
      "status": "imported",
+     "look": {
+      "fill": "#eff6ff",
+      "line": "#2563eb",
+      "alert": false,
+      "dashed": false
+     },
      "children": [
       {
        "id": "cat:shared/base/net",
        "kind": "category",
        "title": "net/",
        "sub": "n h \u00b7 1",
-       "status": "inherited"
+       "status": "inherited",
+       "look": {
+        "fill": "#dbeafe",
+        "line": "#2563eb",
+        "alert": false,
+        "dashed": false
+       }
       }
      ]
     }

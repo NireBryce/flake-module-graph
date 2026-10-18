@@ -8,7 +8,7 @@ import json
 import pathlib
 
 from .layout import Layout, children_of
-from .look import ALERT, BOX_FILL, PALETTE, hues, parts
+from .look import ALERT, BOX_FILL, PALETTE, colours, hues, parts
 
 TEMPLATE = pathlib.Path(__file__).with_name('page.html')
 PLACEHOLDER = '/*@DATA@*/null'
@@ -16,13 +16,24 @@ PLACEHOLDER = '/*@DATA@*/null'
 
 def page_data(g, layout=Layout()):
     """The page's model, from a hosts-view graph: areas holding everything
-    beneath them as a tree, each with its `place` (behind, beside, user --
+    beneath them as a tree, each card or box with its `look`, each area with
+    its `place` (behind, beside, user --
     the far end -- or shared; shared ones in layout.shared's order, then the
     rest alphabetically), the hosts and the home configurations they enable
     ("homes": aggregates another aggregate enables), each with its hue, what
     each imports, and which homes each host enables. A name a host includes
     that the document doesn't know goes in its own 'not found' area."""
     kids, hue = children_of(g), hues(g)
+
+    def look(n, boxed):
+        """How the page draws a card or box, from the colour standard: its
+        fill and outline, and whether it is outlined as an alert (nothing
+        reaches it) or dashed (reached only through a module named alone)."""
+        fill, line = colours(n)
+        alert = colours(n) == ALERT
+        if boxed:       # a category holding categories, drawn as a box
+            fill = ALERT[0] if alert else BOX_FILL
+        return {'fill': fill, 'line': line, 'alert': alert, 'dashed': n.status == 'by-module'}
 
     def node(i):
         n = g.nodes[i]
@@ -31,6 +42,8 @@ def page_data(g, layout=Layout()):
         if n.kind == 'category':
             out['status'] = n.status
         children = [node(c) for c in kids.get(i, []) if c in g.nodes]
+        if n.kind != 'area':
+            out['look'] = look(n, boxed=bool(children) and n.kind == 'category')
         if children:
             out['children'] = children
         return out

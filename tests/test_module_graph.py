@@ -641,6 +641,25 @@ class Page(Tree):
         areas = {a['title']: a for a in self.data()['areas']}
         self.assertEqual([c['title'] for c in areas['not found']['children']], ['ghost'])
 
+    def test_each_card_and_box_carries_its_look(self):
+        # the page draws what look.py decides; it decides no colour itself
+        self.d.category('area/lonely')
+        self.d.module('area/lonely/l.nix', 'nixos')
+        cards = {}
+
+        def walk(n):
+            cards[n['id']] = n.get('look')
+            for c in n.get('children', []):
+                walk(c)
+        for a in self.data()['areas']:
+            walk(a)
+        self.assertEqual(cards['cat:area/used'],          # holds sub: a box
+                         {'fill': BOX_FILL, 'line': PALETTE['category'][1], 'alert': False, 'dashed': False})
+        self.assertEqual(cards['cat:area/lonely'],
+                         {'fill': ALERT[0], 'line': ALERT[1], 'alert': True, 'dashed': False})
+        self.assertEqual(cards['missing:ghost']['fill'], PALETTE['missing'][0])
+        self.assertIsNone(cards['area:area'])              # an area is a container, not a card
+
     def test_style_comes_from_the_python_palette(self):
         style_ = self.data()['style']
         self.assertEqual(style_['palette']['category'], list(PALETTE['category']))
