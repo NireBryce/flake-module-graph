@@ -9,6 +9,7 @@
     #   apps       `nix run . -- <args>`: runs that command
     #   devShells  `nix develop`: a shell with python3, just, graphviz, chromium
     #   checks     `nix flake check`: the unit tests and a run of the command
+    #   lib        functions for other flakes: a drawing, or a check, built by Nix
     # The tool itself is plain Python (module_graph/); Nix only packages it.
     outputs = { self, nixpkgs }:
         let
@@ -21,17 +22,57 @@
             # README doesn't rebuild the command.
             src   = lib.fileset.toSource { root = ./.; fileset = ./module_graph; };
             tests = lib.fileset.toSource { root = ./.; fileset = lib.fileset.unions [ ./module_graph ./tests ]; };
+
+            # The command, built from whichever nixpkgs `pkgs` is: this flake's
+            # for `packages`, the caller's for `lib`. Python stdlib only.
+            # `--flake` runs the `nix` already on PATH.
+            mkModuleGraph = pkgs: pkgs.writeShellApplication {
+                name          = "module-graph";
+                runtimeInputs = [ pkgs.python3 ];
+                text          = ''PYTHONSAFEPATH=1 PYTHONPATH=${src} exec python3 -m module_graph "$@"'';
+            };
+
+            # A document as Nix data (a flake's `moduleGraph`), as a file the
+            # command reads: `$graphPath` in the build.
+            withGraph = graph: { graph = builtins.toJSON graph; passAsFile = [ "graph" ]; };
+            configFlag = config: lib.optionalString (config != null) "--config ${config}";
         in
         {
             packages = forAll (pkgs: rec {
-                # Python stdlib only. `--flake` runs the `nix` already on PATH.
-                module-graph = pkgs.writeShellApplication {
-                    name          = "module-graph";
-                    runtimeInputs = [ pkgs.python3 ];
-                    text          = ''PYTHONSAFEPATH=1 PYTHONPATH=${src} exec python3 -m module_graph "$@"'';
-                };
+                module-graph = mkModuleGraph pkgs;
                 default = module-graph;
             });
+
+            # For a flake that publishes `moduleGraph`, with `pkgs` its own
+            # nixpkgs (wiki/using-the-tool.md, "Drawings built by Nix"):
+            #
+            #   packages.x86_64-linux.modules-html = flake-module-graph.lib.render {
+            #       inherit pkgs; graph = self.moduleGraph; view = "html";
+            #   };
+            #   checks.x86_64-linux.drawings = flake-module-graph.lib.checkMarkdown {
+            #       inherit pkgs; graph = self.moduleGraph; src = self; files = [ "README.md" ];
+            #   };
+            lib = {
+                # One drawing as a file: `view` is tree, hosts, dot or html;
+                # `args` are the filters (`[ "--depth" "1" ]`), `config` a
+                # layout file.
+                render = { pkgs, graph, view ? "html", args ? [ ], config ? null }:
+                    pkgs.runCommand "module-graph-${view}"
+                        (withGraph graph // { nativeBuildInputs = [ (mkModuleGraph pkgs) ]; }) ''
+                        module-graph ${lib.escapeShellArg view} "$graphPath" ${configFlag config} \
+                            ${lib.escapeShellArgs args} -o "$out"
+                    '';
+                # Fails when a module-graph block in `files` (paths inside
+                # `src`) is stale; the message names the file and how to fix it.
+                checkMarkdown = { pkgs, graph, src, files, config ? null }:
+                    pkgs.runCommand "module-graph-markdown-check"
+                        (withGraph graph // { nativeBuildInputs = [ (mkModuleGraph pkgs) ]; }) ''
+                        cd ${src}
+                        module-graph markdown --check "$graphPath" ${configFlag config} \
+                            ${lib.concatMapStringsSep " " (f: "--file ${lib.escapeShellArg f}") files}
+                        touch "$out"
+                    '';
+            };
 
             apps = forAll (pkgs: {
                 default = {
@@ -62,6 +103,19 @@
                         hosts ${./tests/fixtures/browser.json} > $out
                     grep -q 'flowchart TB' $out
                 '';
+                # lib, as another flake calls it: the same bytes as the saved views
+                render = let
+                    drawn = self.lib.render {
+                        inherit pkgs; graph = lib.importJSON ./tests/fixtures/golden.json;
+                        view = "hosts"; config = ./tests/fixtures/golden.toml;
+                    };
+                in pkgs.runCommand "module-graph-lib-render" { } ''
+                    cmp ${drawn} ${./tests/expected/golden/hosts.mmd} && touch $out
+                '';
+                markdown = self.lib.checkMarkdown {
+                    inherit pkgs; graph = lib.importJSON ./tests/fixtures/golden.json;
+                    src = ./tests/fixtures; files = [ "drawings.md" ]; config = ./tests/fixtures/golden.toml;
+                };
             });
         };
 }

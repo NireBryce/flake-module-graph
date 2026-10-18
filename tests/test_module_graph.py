@@ -816,6 +816,85 @@ class Rendering(Tree):
         self.assertIn('used/', out)
 
 
+class Markdown(Tree):
+    """`markdown`: drawings kept inside a Markdown file, between markers,
+    rewritten in place or checked for staleness."""
+
+    STALE = (
+        '# Modules\n\n'
+        '<!-- module-graph: tree --categories-only -->\n'
+        'old drawing\n'
+        '<!-- /module-graph -->\n\n'
+        'Hosts:\n\n'
+        '<!-- module-graph: hosts --category used -->\n'
+        '<!-- /module-graph -->\n'
+        'the end\n')
+
+    def md(self, text):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = pathlib.Path(tmp.name) / 'README.md'
+        path.write_text(text)
+        return path
+
+    def test_blocks_are_rewritten_between_their_markers(self):
+        path = self.md(self.STALE)
+        rc, out = self.cli('markdown', 'DOC', '--file', str(path))
+        self.assertEqual((rc, out), (0, f'updated {path}: 2 drawings\n'))
+        text = path.read_text()
+        tree = self.cli('tree', 'DOC', '--categories-only')[1]
+        hosts = self.cli('hosts', 'DOC', '--category', 'used')[1]
+        self.assertEqual(text, (
+            '# Modules\n\n'
+            '<!-- module-graph: tree --categories-only -->\n'
+            f'```mermaid\n{tree}```\n'
+            '<!-- /module-graph -->\n\n'
+            'Hosts:\n\n'
+            '<!-- module-graph: hosts --category used -->\n'
+            f'```mermaid\n{hosts}```\n'
+            '<!-- /module-graph -->\n'
+            'the end\n'))
+
+    def test_rewriting_again_changes_nothing(self):
+        path = self.md(self.STALE)
+        self.cli('markdown', 'DOC', '--file', str(path))
+        once = path.read_text()
+        rc, out = self.cli('markdown', 'DOC', '--file', str(path))
+        self.assertEqual((rc, out, path.read_text()), (0, f'{path}: 2 drawings, all current\n', once))
+
+    def test_check_fails_on_a_stale_file_and_leaves_it_alone(self):
+        path = self.md(self.STALE)
+        with self.assertRaises(SystemExit) as cm:
+            self.cli('markdown', 'DOC', '--file', str(path), '--check')
+        self.assertEqual(str(cm.exception),
+                         f'error: {path}: 2 of 2 drawings are stale; '
+                         f'run `module-graph markdown --file {path}` to update them')
+        self.assertEqual(path.read_text(), self.STALE)
+        self.cli('markdown', 'DOC', '--file', str(path))
+        self.assertEqual(self.cli('markdown', 'DOC', '--file', str(path), '--check')[0], 0)
+
+    def test_a_bad_marker_names_its_line(self):
+        cases = {
+            '<!-- module-graph: tree -->\nno end\n': 'line 1: no `<!-- /module-graph -->` after it',
+            'x\n<!-- module-graph: dot --view hosts -->\n<!-- /module-graph -->\n':
+                "line 2: `dot` can't go in Markdown; use tree or hosts",
+            '<!-- module-graph: tree --flake . -->\n<!-- /module-graph -->\n':
+                'line 1: --flake belongs on the command line, not in a marker',
+            '<!-- module-graph: tree --nope -->\n<!-- /module-graph -->\n':
+                'line 1: unrecognized arguments: --nope',
+        }
+        for text, needle in cases.items():
+            path = self.md(text)
+            with self.assertRaises(SystemExit) as cm:
+                self.cli('markdown', 'DOC', '--file', str(path))
+            self.assertEqual(str(cm.exception), f'error: {path}: {needle}')
+
+    def test_markdown_needs_a_file(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.cli('markdown', 'DOC')
+        self.assertEqual(str(cm.exception), 'error: markdown needs --file FILE')
+
+
 class Saved(unittest.TestCase):
     """Every view of tests/fixtures/golden.json, byte for byte against
     tests/expected/golden/. A change meant to move the drawing: check the
