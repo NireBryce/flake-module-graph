@@ -28,27 +28,52 @@ def rel(p):
 
 
 def prose(path):
-    """The file's lines outside fenced code blocks."""
-    out, fenced = [], False
+    """The file's lines outside fenced code blocks; a fence closes only
+    with the character that opened it."""
+    out, fence = [], None
     for line in path.read_text().splitlines():
-        if line.lstrip().startswith(('```', '~~~')):
-            fenced = not fenced
-        elif not fenced:
+        mark = re.match(r' {0,3}(`{3,}|~{3,})', line)
+        if fence:
+            if mark and mark.group(1)[0] == fence[0] and len(mark.group(1)) >= len(fence):
+                fence = None
+        elif mark:
+            fence = mark.group(1)
+        else:
             out.append(line)
     return out
 
 
+def links(path):
+    """The targets of the file's Markdown links, outside code."""
+    text = re.sub(r'`[^`\n]*`', '', '\n'.join(prose(path)))    # inline code
+    return re.findall(r'\]\(([^)\s]+)\)', text)
+
+
 def anchors(path):
     """GitHub's anchors for a file's headings: lowercase, punctuation
-    dropped, spaces to hyphens."""
-    return {re.sub(r'[^\w\- ]', '', l.lstrip('#').strip().lower()).replace(' ', '-')
-            for l in prose(path) if re.match(r'#{1,6} ', l)}
+    dropped, spaces to hyphens; a repeated one gets -1, -2, ..."""
+    out, seen = set(), {}
+    for line in prose(path):
+        if re.match(r'#{1,6} ', line):
+            slug = re.sub(r'[^\w\- ]', '', line.lstrip('#').strip().lower()).replace(' ', '-')
+            n = seen.get(slug, 0)
+            seen[slug] = n + 1
+            out.add(f'{slug}-{n}' if n else slug)
+    return out
 
 
-def frontmatter(path):
+def frontmatter(test, path):
+    """({key: value}, body). Fails the test, rather than crashing, on
+    frontmatter that isn't plain one-line `key: value` pairs."""
     text = path.read_text()
     head = re.match(r'---\n(.*?)\n---\n', text, re.S)
-    return dict(l.split(': ', 1) for l in head.group(1).splitlines()), text[head.end():]
+    test.assertIsNotNone(head, 'no --- frontmatter --- at the top')
+    meta = {}
+    for line in head.group(1).splitlines():
+        pair = re.fullmatch(r'([a-z_-]+): (\S.*)', line)
+        test.assertIsNotNone(pair, f'not a one-line `key: value`: {line!r}')
+        meta[pair.group(1)] = pair.group(2)
+    return meta, text[head.end():]
 
 
 class Skills(unittest.TestCase):
@@ -57,7 +82,7 @@ class Skills(unittest.TestCase):
     def test_frontmatter(self):
         for path in SKILLS.glob('*/SKILL.md'):
             with self.subTest(rel(path)):
-                meta, body = frontmatter(path)
+                meta, body = frontmatter(self, path)
                 self.assertLessEqual(set(meta), {'name', 'description', 'when_to_use'},
                                      'only name, description and when_to_use are read')
                 self.assertEqual(meta['name'], path.parent.name)
@@ -104,7 +129,7 @@ class Links(unittest.TestCase):
 
     def test_relative_links_and_anchors_resolve(self):
         for path in DOCS:
-            for target in re.findall(r'\]\(([^)\s]+)\)', '\n'.join(prose(path))):
+            for target in links(path):
                 if re.match(r'[a-z]+:', target):
                     continue
                 file, _, anchor = target.partition('#')

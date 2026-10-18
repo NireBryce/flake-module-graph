@@ -70,7 +70,7 @@ numbers them in every drawing.
 | Check | Run | Catches |
 |---|---|---|
 | unit tests | `just test` | the model, renderers, command line, and the docs' own rules (`tests/test_docs.py`) |
-| saved views | `just golden` | any byte that moved in eleven views of `tests/fixtures/golden.json` |
+| saved views | `just golden` | any byte that moved in the saved views of `tests/fixtures/golden.json` |
 | the page | `just browser` | what the page shows per selection, in headless Chromium |
 | the package | `just check` | `nix flake check`: the tests on Python 3.11 too, `lib.render` |
 | everything | `just preflight` | all of the above, and the published graph end to end -- what CI runs |

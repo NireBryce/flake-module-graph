@@ -29,12 +29,6 @@
         "homeManager"
       ]
     },
-    "defaults": {
-      "path": "shared/base/defaults.nix",
-      "classes": [
-        "nixos"
-      ]
-    },
     "locale": {
       "path": "shared/base/locale.nix",
       "classes": [
@@ -91,5 +85,18 @@
         "me-home"
       ]
     }
-  }
+  },
+  "defaults": [
+    {
+      "path": "shared/base/defaults.nix",
+      "dir": "shared/base",
+      "category": "shared/base",
+      "classes": [
+        "nixos"
+      ]
+    }
+  ],
+  "admin": [
+    "hosts/hosts.nix"
+  ]
 }

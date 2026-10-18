@@ -20,7 +20,7 @@ including `shell`, which a module in `base` turns on (`enables`):
 %%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
 flowchart TB
     subgraph g0["shared"]
-        n0("<b>base/</b><br/><i>n · 4</i>")
+        n0("<b>base/</b><br/><i>n · 3</i>")
         n1("<b>desktop/</b><br/><i>n · 1</i>")
         n2("<b>shell/</b><br/><i>h · 2</i>")
     end
