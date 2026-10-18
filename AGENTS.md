@@ -48,7 +48,7 @@ just golden          # every view against its saved output (`just golden --updat
 just browser         # the page in headless Chromium (needs chromium: `nix develop`)
 just check           # nix flake check: unit tests and the packaged command
 just e2e             # the packaged command on dirs-as-categories' graph, at a pinned revision
-just preflight       # all of the above -- what CI runs
+just preflight       # all of the above -- what CI runs; needs network (e2e)
 nix develop          # python3, just, graphviz; chromium on Linux
 nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 ```
@@ -82,7 +82,8 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 ## Maintenance that runs itself
 
 - `.github/workflows/update-flake-lock.yml`: on the 3rd of each month, a
-  `nix flake update` PR (branch `chore/flake-lock-<date>`). Review it like
+  `nix flake update` PR from branch `chore/flake-lock`, force-pushed, so an
+  open one is refreshed rather than duplicated. Review it like
   any other: CI passing means the saved views didn't move.
 - `.github/dependabot.yml`: monthly PRs bumping the actions, which are
   pinned by commit with the version in a comment.

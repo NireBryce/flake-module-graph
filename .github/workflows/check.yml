@@ -6,7 +6,7 @@ on:
   workflow_dispatch:          # update-flake-lock.yml starts it on the PRs it opens
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' }}   # every merge to main keeps its run
 permissions:
   contents: read
 # Actions are pinned by commit; Dependabot (.github/dependabot.yml) bumps
