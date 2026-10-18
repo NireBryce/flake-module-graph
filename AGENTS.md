@@ -50,7 +50,8 @@ just test            # unit tests
 just golden          # every view against its saved output (`just golden --update`)
 just browser         # the page in headless Chromium (needs chromium: `nix develop`)
 just check           # nix flake check: unit tests (also on Python 3.11) and the packaged command
-just preflight       # all of the above -- what CI runs
+just e2e             # the packaged command on dirs-as-categories' graph, at a pinned revision
+just preflight       # all of the above -- what CI runs; needs network (e2e)
 nix develop          # python3, just, graphviz; chromium on Linux
 nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 ```
@@ -80,6 +81,17 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 - **Every view is saved** (`tests/expected/golden/`, `just golden`): a
   refactor meant to change nothing leaves them byte for byte; a change
   meant to move the drawing has its `git diff` read before `--update`.
+
+## Maintenance that runs itself
+
+- `.github/workflows/update-flake-lock.yml`: on the 3rd of each month, a
+  `nix flake update` PR from branch `chore/flake-lock`, force-pushed, so an
+  open one is refreshed rather than duplicated. Review it like
+  any other: CI passing means the saved views didn't move.
+- `.github/dependabot.yml`: monthly PRs bumping the actions, which are
+  pinned by commit with the version in a comment.
+- The dirs-as-categories revision `just e2e` draws is pinned in `justfile`;
+  bump it by hand, on purpose.
 
 ## The contract with dirs-as-categories
 
