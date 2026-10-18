@@ -96,12 +96,17 @@
                 };
             });
 
-            checks = forAll (pkgs: {
-                tests = pkgs.runCommand "module-graph-tests" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-                    cp -r ${tests} src && chmod -R u+w src && cd src
-                    python3 -m unittest discover -s tests
-                    touch $out
-                '';
+            checks = forAll (pkgs: let
+                unittests = python: pkgs.runCommand "module-graph-tests-${python.version}"
+                    { nativeBuildInputs = [ python ]; } ''
+                        cp -r ${tests} src && chmod -R u+w src && cd src
+                        python3 -m unittest discover -s tests
+                        touch $out
+                    '';
+            in {
+                tests = unittests pkgs.python3;
+                # the oldest Python pyproject.toml's requires-python allows
+                python311 = unittests pkgs.python311;
                 # the packaged command, on the browser fixture
                 package = pkgs.runCommand "module-graph-package" { } ''
                     ${lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.default} \

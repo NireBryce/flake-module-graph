@@ -17,7 +17,7 @@ import pathlib
 import subprocess
 import sys
 
-from . import document, markdown
+from . import __version__, document, markdown
 from .dot import dot
 from .layout import WRAP, Layout, load_layout
 from .errors import ModuleGraphError, unreadable
@@ -118,6 +118,7 @@ def redraw_markdown(args, run):
 def main(argv=None, run=subprocess.run):
     """The command line. `run` stands in for subprocess.run in tests."""
     ap = argparse.ArgumentParser(prog='module-graph', description=__doc__.split('\n\n')[0])
+    ap.add_argument('--version', action='version', version=f'module-graph {__version__}')
     ap.add_argument('cmd', choices=['tree', 'hosts', 'dot', 'html', 'markdown'])
     ap.add_argument('document', nargs='?', help='a module-graph JSON file, or - for stdin')
     ap.add_argument('--flake', metavar='REF',
