@@ -573,6 +573,36 @@ class Documents(Tree):
                 self.cli(*argv)
             self.assertRegex(str(cm.exception), r"^error: nope\.(json|toml): no such file$")
 
+    def test_unreadable_inputs_are_errors_not_tracebacks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = pathlib.Path(tmp) / 'binary'
+            binary.write_bytes(b'\xff\xfe\x00garbage')
+            for argv in (['tree', tmp], ['tree', 'DOC', '--config', tmp],
+                         ['tree', str(binary)], ['tree', 'DOC', '--config', str(binary)]):
+                with self.subTest(argv), self.assertRaises(SystemExit) as cm:
+                    self.cli(*argv)
+                self.assertRegex(str(cm.exception), r'^error: \S+: ')
+
+    def test_reading_the_flake_here_says_so_when_stdin_may_be_meant(self):
+        # `cat graph.json | module-graph tree` without `-` would otherwise
+        # read the flake silently
+        fake = FakeNix({'.#moduleGraph': self.d.build()})
+        err = io.StringIO()
+        old = sys.stdin
+        sys.stdin = io.StringIO('{}')          # not a terminal
+        try:
+            with tempfile.TemporaryDirectory() as tmp, contextlib.chdir(tmp), contextlib.redirect_stderr(err):
+                pathlib.Path('flake.nix').write_text('{ outputs = _: { }; }')
+                self.cli('tree', run=fake)
+                pathlib.Path('flake.nix').unlink()
+                pathlib.Path('flake.nix').mkdir()     # a directory is not a flake
+                with self.assertRaises(SystemExit):
+                    self.cli('tree', run=fake)
+        finally:
+            sys.stdin = old
+        self.assertEqual(err.getvalue(), 'note: no DOCUMENT given: reading the flake here '
+                                         '(--flake .); to read stdin, give -\n')
+
     def test_a_layout_file_that_is_not_toml_says_where(self):
         with tempfile.TemporaryDirectory() as tmp:
             bad = pathlib.Path(tmp) / 'l.toml'
@@ -916,6 +946,13 @@ class CommandLine(Tree):
             self.assertEqual((rc, printed), (0, ''))
             self.assertEqual(out.read_text(), self.cli('tree', 'DOC')[1])
 
+    def test_an_unwritable_output_is_an_error_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for target in (f'{tmp}/no/such/dir/x.mmd', tmp):
+                with self.assertRaises(SystemExit) as cm:
+                    self.cli('tree', 'DOC', '-o', target)
+                self.assertRegex(str(cm.exception), rf'^error: {re.escape(target)}: ')
+
     def test_a_failure_leaves_no_output_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = pathlib.Path(tmp) / 'tree.mmd'
@@ -962,6 +999,16 @@ class Scale(unittest.TestCase):
         g = graph(doc)
         self.assertLess(time.monotonic() - start, 5)       # was about 120s
         self.assertEqual(sum(n.kind == 'module' for n in g.nodes.values()), 5001)
+
+    def test_five_thousand_modules_each_in_its_own_folder(self):
+        # thousands of plain folders: finding a module's parent must not
+        # scan them all
+        cats = {f'c{c}': {'dir': f'a{c % 20}/c{c}'} for c in range(50)}
+        mods = {f'm{c}-{f}-{m}': {'path': f'a{c % 20}/c{c}/f{f}/g{m}/m.nix', 'classes': ['nixos']}
+                for c in range(50) for f in range(10) for m in range(10)}
+        start = time.monotonic()
+        graph({'version': 1, 'categories': cats, 'modules': mods})
+        self.assertLess(time.monotonic() - start, 5)
 
 
 if __name__ == '__main__':
