@@ -27,7 +27,7 @@ in the first command, or turn them on for good in `~/.config/nix/nix.conf`:
 
 ```sh
 nix run github:NireBryce/flake-module-graph -- hosts --flake .            # Mermaid, hosts view
-nix run github:NireBryce/flake-module-graph -- html --flake . > modules.html
+nix run github:NireBryce/flake-module-graph -- html -o modules.html          # the flake here, as a page
 nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- dot - --view hosts
 ```
 
@@ -40,7 +40,9 @@ nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- d
 
 The document is a file, `-` for stdin, or `--flake REF` (runs
 `nix eval --json REF`, with flakes turned on for that command; a REF without
-`#` means `REF#moduleGraph`).
+`#` means `REF#moduleGraph`). With none of them, a `flake.nix` in the current
+directory is read as `--flake .`. `-o FILE` writes the drawing to FILE, and
+only once it has succeeded.
 
 Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the

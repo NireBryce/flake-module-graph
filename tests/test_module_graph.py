@@ -7,12 +7,13 @@ them on purpose, and assert the graph says so. Pure stdlib:
 
     python3 -m unittest discover -s tests      # from the repository root
 """
-import contextlib, io, json, pathlib, re, sys, tempfile, types, unittest
+import contextlib, io, json, pathlib, re, sys, tempfile, time, types, unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import importlib  # noqa: E402
 from module_graph import document, layout as lay  # noqa: E402
+from module_graph.errors import ModuleGraphError  # noqa: E402
 pg = importlib.import_module('module_graph.page')   # the module, not the function __init__ re-exports
 from module_graph.__main__ import main  # noqa: E402
 from module_graph.dot import GRID, dot  # noqa: E402
@@ -224,7 +225,7 @@ class Selecting(Tree):
         self.assertEqual({n.label for n in one.nodes.values()}, {'used', 'a', 'sub'})
 
     def test_unknown_category_is_an_error_naming_the_real_ones(self):
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(ModuleGraphError) as cm:
             select(self.g(), 'tree', category='nope')
         self.assertIn('used', str(cm.exception))
 
@@ -503,18 +504,18 @@ class Documents(Tree):
                             'nix eval --json .#moduleGraph'),
         }
         for stderr, (cause, hint) in cases.items():
-            with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(ModuleGraphError) as cm:
                 document.from_flake('.', FakeNix({}, stderr=stderr))
             first, *rest = str(cm.exception).splitlines()
-            self.assertTrue(first.startswith('error: module-graph document: nix eval .#moduleGraph failed: '))
+            self.assertTrue(first.startswith('module-graph document: nix eval .#moduleGraph failed: '))
             self.assertIn(cause, first)
             self.assertIn(hint, '\n'.join(rest))
 
     def test_evaluation_failures_say_why(self):
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(ModuleGraphError) as cm:
             document.from_flake('.', FakeNix({}, stderr='something odd\n'))
         self.assertIn('something odd', str(cm.exception))   # no `error:` line: the last line
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(ModuleGraphError) as cm:
             document.from_flake('.', FakeNix({}, missing=True))
         self.assertIn('nix is not installed', str(cm.exception))
 
@@ -528,10 +529,10 @@ class Documents(Tree):
             'includes.h: must map classes': {**good, 'includes': {'h': ['used']}},
         }
         for needle, doc in cases.items():
-            with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(ModuleGraphError) as cm:
                 document.loads(json.dumps(doc))
             self.assertIn(needle, str(cm.exception))
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(ModuleGraphError) as cm:
             document.loads('{not json')
         self.assertIn('not JSON', str(cm.exception))
 
@@ -559,9 +560,65 @@ class Documents(Tree):
         self.assertRegex(module_graph.__version__, r'^\d+\.\d+\.\d+$')
 
     def test_cli_needs_exactly_one_source(self):
-        for argv in (['tree'], ['tree', 'DOC', '--flake', 'x']):
-            with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as cm:
+            self.cli('tree', 'DOC', '--flake', 'x')
+        self.assertEqual(str(cm.exception), 'error: give a DOCUMENT or --flake, not both')
+        with tempfile.TemporaryDirectory() as tmp, contextlib.chdir(tmp):
+            with self.assertRaises(SystemExit) as cm:
+                self.cli('tree')
+        self.assertIn('no flake.nix here', str(cm.exception))
+
+    def test_with_no_document_a_flake_here_is_read(self):
+        fake = FakeNix({'.#moduleGraph': self.d.build()})
+        with tempfile.TemporaryDirectory() as tmp, contextlib.chdir(tmp):
+            pathlib.Path('flake.nix').write_text('{ outputs = _: { }; }')
+            rc, out = self.cli('tree', run=fake)
+        self.assertEqual((rc, fake.calls[0][-1]), (0, '.#moduleGraph'))
+        self.assertIn('used/', out)
+
+    def test_a_missing_file_is_an_error_not_a_traceback(self):
+        for argv in (['tree', 'nope.json'], ['tree', 'DOC', '--config', 'nope.toml']):
+            with self.assertRaises(SystemExit) as cm:
                 self.cli(*argv)
+            self.assertRegex(str(cm.exception), r"^error: nope\.(json|toml): no such file$")
+
+    def test_unreadable_inputs_are_errors_not_tracebacks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = pathlib.Path(tmp) / 'binary'
+            binary.write_bytes(b'\xff\xfe\x00garbage')
+            for argv in (['tree', tmp], ['tree', 'DOC', '--config', tmp],
+                         ['tree', str(binary)], ['tree', 'DOC', '--config', str(binary)]):
+                with self.subTest(argv), self.assertRaises(SystemExit) as cm:
+                    self.cli(*argv)
+                self.assertRegex(str(cm.exception), r'^error: \S+: ')
+
+    def test_reading_the_flake_here_says_so_when_stdin_may_be_meant(self):
+        # `cat graph.json | module-graph tree` without `-` would otherwise
+        # read the flake silently
+        fake = FakeNix({'.#moduleGraph': self.d.build()})
+        err = io.StringIO()
+        old = sys.stdin
+        sys.stdin = io.StringIO('{}')          # not a terminal
+        try:
+            with tempfile.TemporaryDirectory() as tmp, contextlib.chdir(tmp), contextlib.redirect_stderr(err):
+                pathlib.Path('flake.nix').write_text('{ outputs = _: { }; }')
+                self.cli('tree', run=fake)
+                pathlib.Path('flake.nix').unlink()
+                pathlib.Path('flake.nix').mkdir()     # a directory is not a flake
+                with self.assertRaises(SystemExit):
+                    self.cli('tree', run=fake)
+        finally:
+            sys.stdin = old
+        self.assertEqual(err.getvalue(), 'note: no DOCUMENT given: reading the flake here '
+                                         '(--flake .); to read stdin, give -\n')
+
+    def test_a_layout_file_that_is_not_toml_says_where(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = pathlib.Path(tmp) / 'l.toml'
+            bad.write_text('[layout\n')
+            with self.assertRaises(ModuleGraphError) as cm:
+                lay.load_layout(bad)
+        self.assertIn('l.toml: not TOML (', str(cm.exception))
 
 
 class Layouts(unittest.TestCase):
@@ -584,7 +641,7 @@ class Layouts(unittest.TestCase):
     def test_mistakes_are_refused(self):
         for text, needle in (('[layout]\nabove = ["a"]\n', 'unknown [layout] keys: above'),
                              ('[layout]\ntop = "a"\n', 'top must be a list')):
-            with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(ModuleGraphError) as cm:
                 lay.load_layout(self.write(text))
             self.assertIn(needle, str(cm.exception))
 
@@ -662,7 +719,7 @@ class Page(Tree):
         with tempfile.TemporaryDirectory() as tmp:
             bad = pathlib.Path(tmp) / 'template.html'
             bad.write_text('<!doctype html><script>const DATA = null;</script>')
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(ModuleGraphError):
                 pg.page(select(self.g(), 'hosts'), template=bad)
 
     def test_cli_html(self):
@@ -806,6 +863,82 @@ class Saved(unittest.TestCase):
     def test_every_view_matches_its_saved_output(self):
         diffs = golden.differences()
         self.assertFalse(diffs, '\n' + ''.join(diffs.values()))
+
+
+class CommandLine(Tree):
+    """What the command does around the drawing: where it writes, what it
+    warns about, and how a mistake reaches the user."""
+
+    def test_output_goes_to_a_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = pathlib.Path(tmp) / 'tree.mmd'
+            rc, printed = self.cli('tree', 'DOC', '-o', str(out))
+            self.assertEqual((rc, printed), (0, ''))
+            self.assertEqual(out.read_text(), self.cli('tree', 'DOC')[1])
+
+    def test_an_unwritable_output_is_an_error_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for target in (f'{tmp}/no/such/dir/x.mmd', tmp):
+                with self.assertRaises(SystemExit) as cm:
+                    self.cli('tree', 'DOC', '-o', target)
+                self.assertRegex(str(cm.exception), rf'^error: {re.escape(target)}: ')
+
+    def test_a_failure_leaves_no_output_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = pathlib.Path(tmp) / 'tree.mmd'
+            with self.assertRaises(SystemExit):
+                self.cli('tree', 'DOC', '--category', 'nope', '-o', str(out))
+            self.assertFalse(out.exists())
+
+    def test_library_errors_reach_the_user_as_one_line(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.cli('tree', 'DOC', '--category', 'nope')
+        self.assertEqual(str(cm.exception), "error: no category 'nope'; categories: sub, used")
+
+    def test_mermaid_past_its_default_limits_is_warned_about(self):
+        small = io.StringIO()
+        with contextlib.redirect_stderr(small):
+            self.cli('tree', 'DOC')
+        self.assertEqual(small.getvalue(), '')
+        for k in range(800):
+            self.d.module(f'area/used/many/m{k:03}.nix', 'nixos')
+        big = io.StringIO()
+        with contextlib.redirect_stderr(big):
+            rc, out = self.cli('tree', 'DOC')
+        self.assertEqual(rc, 0)
+        self.assertGreater(len(out), 50000)
+        self.assertIn(f'warning: this Mermaid diagram is {len(out) - 1} characters', big.getvalue())
+        self.assertIn('warning: this Mermaid diagram has 801 links', big.getvalue())   # many/ -> 800 modules, sub -> b
+        self.assertIn('--category', big.getvalue())
+
+
+class Scale(unittest.TestCase):
+    """A few thousand modules is a real flake's size, not a stress test."""
+
+    def test_five_thousand_modules_build_in_seconds(self):
+        cats, mods = {}, {}
+        for c in range(200):
+            cats[f'c{c}'] = {'dir': f'area{c % 10}/c{c}'}
+            for m in range(25):
+                mods[f'm{c}-{m}'] = {'path': f'area{c % 10}/c{c}/sub{m % 3}/m{m}.nix',
+                                     'classes': ['nixos']}
+        mods['laptop'] = {'path': 'hosts/laptop.nix', 'classes': ['nixos']}
+        doc = {'version': 1, 'categories': cats, 'modules': mods,
+               'includes': {'laptop': {'nixos': [f'c{c}' for c in range(0, 200, 7)]}}}
+        start = time.monotonic()
+        g = graph(doc)
+        self.assertLess(time.monotonic() - start, 5)       # was about 120s
+        self.assertEqual(sum(n.kind == 'module' for n in g.nodes.values()), 5001)
+
+    def test_five_thousand_modules_each_in_its_own_folder(self):
+        # thousands of plain folders: finding a module's parent must not
+        # scan them all
+        cats = {f'c{c}': {'dir': f'a{c % 20}/c{c}'} for c in range(50)}
+        mods = {f'm{c}-{f}-{m}': {'path': f'a{c % 20}/c{c}/f{f}/g{m}/m.nix', 'classes': ['nixos']}
+                for c in range(50) for f in range(10) for m in range(10)}
+        start = time.monotonic()
+        graph({'version': 1, 'categories': cats, 'modules': mods})
+        self.assertLess(time.monotonic() - start, 5)
 
 
 if __name__ == '__main__':

@@ -24,3 +24,10 @@ version 1 (dirs-as-categories' `doc/format.md`).
   mistakes.
 - `module-graph --version`; installable without Nix through
   `pyproject.toml` (`pipx`, `uvx`), on Python 3.11 or newer.
+- With no document given, the flake in the current directory
+  (`--flake .`), with a note on stderr when stdin may have been meant.
+- `-o FILE`, written only once the drawing succeeded.
+- A mistake in the input is one `error:` line, never a traceback; as a
+  library, the package raises `ModuleGraphError` and never exits.
+- A warning when a Mermaid drawing passes Mermaid's default limits.
+- A few thousand modules draw in about a second.

@@ -65,6 +65,7 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `module_graph/layout.py` | `[layout]` settings, boxes, rank links |
 | `module_graph/mermaid.py`, `dot.py`, `page.py`, `page.html` | the renderers |
 | `module_graph/document.py` | reading and checking a document |
+| `module_graph/errors.py` | `ModuleGraphError`: every mistake the package reports; only `__main__` exits |
 | `tests/` | unit tests, the saved views (`golden.py`), the browser check, their fixtures |
 | `doc/style.md` | how all the docs are written |
 | `wiki/` | guides: `using-the-tool.md`; `styleguide.md` before adding a page |
