@@ -29,6 +29,8 @@ followed by any missing names it includes.
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+from .errors import ModuleGraphError
+
 CLASS_LETTER = {'nixos': 'n', 'homeManager': 'h', 'darwin': 'd'}
 CLASS_ORDER = list(CLASS_LETTER)
 TOP_LEVEL = '(top level)'      # the area of a module sitting directly in the tree's root
@@ -109,6 +111,13 @@ class Builder:
         # are not drawn; their modules hang off the area.
         self.folders = sorted({d for m in self.modules for d in m.path.parents
                                if d not in self.category_at and self.in_category(d)})
+        # folder -> the modules anywhere under it, in path order. Built once:
+        # asking each module "is this folder above you?" per folder took
+        # minutes on a few thousand modules.
+        self.under = {}
+        for m in self.modules:
+            for d in m.path.parents:
+                self.under.setdefault(d, []).append(m)
         self.includes = doc.get('includes') or {}
         self.enables = doc.get('enables') or {}
         self.reached_by_name = named(self.includes) | named(self.enables)
@@ -131,7 +140,7 @@ class Builder:
 
     def beneath(self, d):
         """The modules anywhere under folder `d`."""
-        return [m for m in self.modules if d in m.path.parents]
+        return self.under.get(d, [])
 
     def area(self, path):
         """The id of the area `path` sits in, adding it on first use."""
@@ -276,7 +285,7 @@ def starting_points(g, category):
     starts = [i for i, n in g.nodes.items() if n.kind == 'category' and n.label == category]
     if not starts:
         known = ', '.join(sorted({n.label for n in g.nodes.values() if n.kind == 'category'}))
-        raise SystemExit(f"error: no category {category!r}; categories: {known}")
+        raise ModuleGraphError(f"no category {category!r}; categories: {known}")
     return starts
 
 

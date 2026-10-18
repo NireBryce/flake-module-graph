@@ -14,6 +14,8 @@ with none every area is a shared area in alphabetical order:
 import tomllib
 from dataclasses import dataclass, field
 
+from .errors import ModuleGraphError
+
 # The shared areas below the hosts wrap their categories at this many per
 # row (--wrap; 0 for one row).
 WRAP = 5
@@ -30,14 +32,19 @@ class Layout:
 
 def load_layout(path):
     """A Layout from the [layout] table of a TOML file."""
-    with open(path, 'rb') as f:
-        table = tomllib.load(f).get('layout', {})
+    try:
+        with open(path, 'rb') as f:
+            table = tomllib.load(f).get('layout', {})
+    except FileNotFoundError:
+        raise ModuleGraphError(f'{path}: no such file') from None
+    except tomllib.TOMLDecodeError as e:
+        raise ModuleGraphError(f'{path}: not TOML ({e})') from None
     unknown = set(table) - set(Layout.__dataclass_fields__)
     if unknown:
-        raise SystemExit(f'error: {path}: unknown [layout] keys: {", ".join(sorted(unknown))}')
+        raise ModuleGraphError(f'{path}: unknown [layout] keys: {", ".join(sorted(unknown))}')
     for key, value in table.items():
         if not (isinstance(value, list) and all(isinstance(v, str) for v in value)):
-            raise SystemExit(f'error: {path}: [layout] {key} must be a list of area names')
+            raise ModuleGraphError(f'{path}: [layout] {key} must be a list of area names')
     return Layout(**{k: tuple(v) for k, v in table.items()})
 
 

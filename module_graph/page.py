@@ -7,6 +7,7 @@ PALETTE, hues and parts() the other renderers use -- and the page
 import json
 import pathlib
 
+from .errors import ModuleGraphError
 from .layout import Layout, children_of
 from .look import ALERT, BOX_FILL, PALETTE, hues, parts
 
@@ -72,5 +73,5 @@ def page(g, layout=Layout(), template=None):
     data = json.dumps(page_data(g, layout), separators=(',', ':')).replace('</', '<\\/')
     text = pathlib.Path(template).read_text()
     if text.count(PLACEHOLDER) != 1:
-        raise SystemExit(f'error: {template} must hold {PLACEHOLDER} exactly once')
+        raise ModuleGraphError(f'{template} must hold {PLACEHOLDER} exactly once')
     return text.replace(PLACEHOLDER, data)
