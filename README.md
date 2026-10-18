@@ -46,6 +46,24 @@ Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the
 hosts view; 0 for one row).
 
+Releases are tagged `vX.Y.Z` (none yet; the first will be `v0.1.0`). To pin
+one instead of following `main`, put its tag after the repository:
+`github:NireBryce/flake-module-graph/vX.Y.Z`. What each release changed, and
+what it breaks, is in [CHANGELOG.md](CHANGELOG.md).
+`module-graph --version` says which you have.
+
+### Without Nix
+
+The tool is Python 3.11 or newer and its standard library, nothing else:
+
+```sh
+pipx install git+https://github.com/NireBryce/flake-module-graph
+uvx --from git+https://github.com/NireBryce/flake-module-graph module-graph tree graph.json
+python3 -m module_graph tree graph.json          # from a clone
+```
+
+`--flake` still needs `nix` on `PATH`; a document file or stdin doesn't.
+
 ### As a flake input
 
 To keep the command in your own flake (a dev shell, a NixOS or home-manager
@@ -124,6 +142,7 @@ nix flake check                 # unit tests, the packaged command
 python3 -m unittest discover -s tests
 python3 tests/golden.py         # every view against tests/expected/golden/ (--update)
 python3 tests/browser.py        # the page in headless Chromium (chromium on PATH)
+nix build .#checks.x86_64-linux.python311   # the unit tests on the oldest Python supported
 ```
 
 ## Licence
