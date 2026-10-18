@@ -245,6 +245,21 @@ class Selecting(Tree):
         self.assertEqual({n.label for n in g.nodes.values() if n.kind == 'aggregate'},
                          {'beta-configuration'})
 
+    def test_hosts_view_category_filter_keeps_the_area_around_it(self):
+        # the page lays out areas: without its area, --category drew nothing
+        g = select(self.g(), 'hosts', category='sub')
+        self.assertIn('area:area', g.nodes)
+        self.assertIn(('area:area', 'cat:area/used/sub'), self.kinds(g, 'contains'))  # used is not in range
+        (area,) = pg.page_data(g)['areas']
+        self.assertEqual([c['id'] for c in area['children']], ['cat:area/used/sub'])
+
+    def test_category_filter_leaves_out_a_named_module_from_elsewhere(self):
+        self.d.category('area/other')
+        self.d.module('area/other/picked.nix', 'nixos')
+        self.d.host('hosts/alpha-configuration.nix', 'nixos', 'used', 'picked')
+        self.assertNotIn('mod:area/other/picked.nix', select(self.g(), 'hosts', category='used').nodes)
+        self.assertIn('mod:area/other/picked.nix', select(self.g(), 'hosts', category='other').nodes)
+
     def test_hosts_view_draws_a_module_a_host_names(self):
         self.d.category('area/never-whole')
         self.d.module('area/never-whole/picked.nix', 'nixos')

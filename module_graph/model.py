@@ -321,13 +321,22 @@ def hosts_subgraph(g, keep, category):
     """The hosts view: every category in range (in its area's container),
     the aggregates that import into one, and the modules they name."""
     shown = {i for i in keep if g.nodes[i].kind in ('category', 'area')}
+    in_range = {i for i in shown if g.nodes[i].kind == 'category'}
     parent, imports = containers(g), []
+    # --category starts below the areas; each category still sits in its
+    # area's container, which the page and the static boxes lay out from.
+    for i in list(shown):
+        top = i
+        while top in parent:
+            top = parent[top]
+        if g.nodes[top].kind == 'area':
+            shown.add(top)
     for e in g.edges:
         if e.kind != 'imports' or e.dst not in g.nodes:
             continue
         if g.nodes[e.dst].kind == 'module':
             # a module included by name: drawn when its category is
-            if category is not None and nearest_shown(parent, e.dst, shown) is None:
+            if category is not None and nearest_shown(parent, e.dst, in_range) is None:
                 continue
             shown.add(e.dst)
             imports.append(e)
