@@ -64,6 +64,8 @@ nix run . -- hosts --flake <flake>    # draw a flake that publishes moduleGraph
 | `module_graph/look.py` | the colour standard and card text |
 | `module_graph/layout.py` | `[layout]` settings, boxes, rank links |
 | `module_graph/mermaid.py`, `dot.py`, `page.py`, `page.html` | the renderers |
+| `module_graph/markdown.py` | `markdown`: drawings kept between markers in a Markdown file |
+| `flake.nix` `lib` | `render`, `checkMarkdown`: drawings and checks for other flakes |
 | `module_graph/document.py` | reading and checking a document |
 | `module_graph/errors.py` | `ModuleGraphError`: every mistake the package reports; only `__main__` exits |
 | `tests/` | unit tests, the saved views (`golden.py`), the browser check, their fixtures |

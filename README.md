@@ -37,6 +37,7 @@ nix eval --json .#moduleGraph | nix run github:NireBryce/flake-module-graph -- d
 | `hosts` | hosts and what they include, top-down (Mermaid) |
 | `dot` | either, as Graphviz (`--view tree\|hosts`) |
 | `html` | the hosts view as a self-contained interactive page |
+| `markdown` | redraws the drawings kept in a Markdown file (`--file`), or checks them (`--check`) |
 
 The document is a file, `-` for stdin, or `--flake REF` (runs
 `nix eval --json REF`, with flakes turned on for that command; a REF without

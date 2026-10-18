@@ -4,6 +4,7 @@
     module-graph hosts [DOCUMENT | -] [--flake REF] [filters]   # hosts -> what they include, Mermaid
     module-graph dot   [DOCUMENT | -] [--flake REF] [filters] [--view tree|hosts]   # Graphviz
     module-graph html  [DOCUMENT | -] [--flake REF] [filters]   # the hosts view as an interactive page
+    module-graph markdown --file FILE [--check] [DOCUMENT | -] [--flake REF]   # redraw the blocks in FILE
 
 The document is a file, `-` for stdin, or --flake REF to run
 `nix eval --json REF` (REF without `#` means REF#moduleGraph, as dirs-as-categories
@@ -16,7 +17,7 @@ import pathlib
 import subprocess
 import sys
 
-from . import __version__, document
+from . import __version__, document, markdown
 from .dot import dot
 from .layout import WRAP, Layout, load_layout
 from .errors import ModuleGraphError, unreadable
@@ -67,11 +68,58 @@ def draw(args, run):
     return mermaid(drawn, args.wrap, layout)
 
 
+def plural(n, word):
+    return f'{n} {word}' + ('' if n == 1 else 's')
+
+
+def redraw_markdown(args, run):
+    """`markdown`: rewrite (or with --check, only compare) the drawings in
+    each --file, all from one read of the document."""
+    if not args.file:
+        raise ModuleGraphError('markdown needs --file FILE')
+    given = [flag for flag, on in (
+        ('--category', args.category is not None), ('--depth', args.depth is not None),
+        ('--categories-only', args.categories_only), ('--view', args.view != 'tree'),
+        ('--wrap', args.wrap != WRAP), ('-o', args.output is not None)) if on]
+    if given:
+        raise ModuleGraphError(f'markdown takes filters in each marker, not {", ".join(given)}')
+    layout = load_layout(args.config) if args.config else Layout()
+    model = graph(read(args, run))
+
+    def draw(o):
+        return mermaid(select(model, o.view, o.category, o.depth, o.categories_only), o.wrap, layout)
+
+    stale_files = []
+    for name in args.file:
+        path = pathlib.Path(name)
+        try:
+            # newline='': read and write the file's own line endings
+            with open(path, newline='') as f:
+                new, total, stale = markdown.rewrite(f.read(), draw)
+        except (OSError, UnicodeDecodeError) as e:
+            raise unreadable(name, e) from None
+        except ModuleGraphError as e:
+            raise ModuleGraphError(f'{name}: {e}') from None
+        if not stale:
+            print(f'{name}: {plural(total, "drawing")}, all current')
+        elif args.check:
+            stale_files.append(f'{name}: {stale} of {plural(total, "drawing")} '
+                               f'{"is" if stale == 1 else "are"} stale; '
+                               f'run `module-graph markdown --file {name}` to update them')
+        else:
+            with open(path, 'w', newline='') as f:
+                f.write(new)
+            print(f'updated {name}: {plural(stale, "drawing")}')
+    if stale_files:
+        raise ModuleGraphError('\n'.join(stale_files))
+    return 0
+
+
 def main(argv=None, run=subprocess.run):
     """The command line. `run` stands in for subprocess.run in tests."""
     ap = argparse.ArgumentParser(prog='module-graph', description=__doc__.split('\n\n')[0])
     ap.add_argument('--version', action='version', version=f'module-graph {__version__}')
-    ap.add_argument('cmd', choices=['tree', 'hosts', 'dot', 'html'])
+    ap.add_argument('cmd', choices=['tree', 'hosts', 'dot', 'html', 'markdown'])
     ap.add_argument('document', nargs='?', help='a module-graph JSON file, or - for stdin')
     ap.add_argument('--flake', metavar='REF',
                     help='evaluate REF (default attribute: moduleGraph; default REF: . when it has a flake.nix)')
@@ -83,8 +131,16 @@ def main(argv=None, run=subprocess.run):
     ap.add_argument('--view', choices=['tree', 'hosts'], default='tree', help='for dot: which graph')
     ap.add_argument('--wrap', type=int, default=WRAP,
                     help=f'hosts view: categories per row in a shared area (default {WRAP}; 0: one row)')
+    ap.add_argument('--file', action='append', metavar='FILE',
+                    help='markdown: a Markdown file whose module-graph blocks to redraw (repeatable)')
+    ap.add_argument('--check', action='store_true',
+                    help='markdown: change nothing; fail if any block is stale')
     args = ap.parse_args(argv)
     try:
+        if args.cmd == 'markdown':
+            return redraw_markdown(args, run)
+        if args.file or args.check:
+            raise ModuleGraphError('--file and --check are for `markdown`')
         text = draw(args, run)
         if args.cmd in ('tree', 'hosts'):
             for w in warnings(text):

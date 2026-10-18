@@ -31,3 +31,6 @@ version 1 (dirs-as-categories' `doc/format.md`).
   library, the package raises `ModuleGraphError` and never exits.
 - A warning when a Mermaid drawing passes Mermaid's default limits.
 - A few thousand modules draw in about a second.
+- `markdown --file FILE [--check]` keeps Mermaid drawings in Markdown
+  current between `<!-- module-graph: … -->` markers; `lib.render` and
+  `lib.checkMarkdown` do the same from another flake, with its nixpkgs.
