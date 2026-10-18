@@ -17,13 +17,12 @@ PLACEHOLDER = '/*@DATA@*/null'
 def page_data(g, layout=Layout()):
     """The page's model, from a hosts-view graph: areas holding everything
     beneath them as a tree, each card or box with its `look`, each area with
-    its `place` (behind, beside, user --
-    the far end -- or shared; shared ones in layout.shared's order, then the
-    rest alphabetically), the hosts and the home configurations they enable
-    ("homes": aggregates another aggregate enables), each with its hue and
-    number, what
-    each imports, and which homes each host enables. A name a host includes
-    that the document doesn't know goes in its own 'not found' area."""
+    its `place` (behind, beside, user -- the far end -- or shared; shared
+    ones in layout.shared's order, then the rest alphabetically); the hosts
+    and the home configurations they enable ("homes": aggregates another
+    aggregate enables), each with its hue and number; what each imports;
+    and which homes each host enables. A name a host includes that the
+    document doesn't know goes in its own 'not found' area."""
     kids, hue = children_of(g), hues(g)
 
     def look(n, boxed):

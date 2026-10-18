@@ -292,6 +292,7 @@ function sourceGroup(parent, label, list, id) {
     const title = div("t", b);
     const mark = document.createElement("span");
     mark.className = "mark"; mark.textContent = source.mark; mark.style.borderColor = source.hue;
+    mark.setAttribute("aria-hidden", "true");     // the name says which host it is
     title.append(mark, source.title);
     div("s", b, source.sub);
     b.addEventListener("click", () => toggle(source.id));
@@ -451,10 +452,14 @@ function apply(animate) {
   const dotted = dotSources();
   for (const [id, dots] of dotEls) {
     dots.replaceChildren();
-    for (const source of dotted) {
-      if (!reachOf.get(source.id).has(id)) continue;
+    const by = dotted.filter(source => reachOf.get(source.id).has(id));
+    for (const source of by) {
       const d = div("dot", dots, source.mark); d.style.borderColor = source.hue; d.title = source.title;
+      d.setAttribute("aria-hidden", "true");
     }
+    // the numbers are for eyes; a screen reader hears the names
+    if (by.length) dots.setAttribute("aria-label", "reached by " + by.map(s => s.title).join(", "));
+    else dots.removeAttribute("aria-label");
   }
   if (before) play(before); else drawEdges();
   document.body.dataset.selected = sources.filter(s => selected.has(s.id)).map(s => s.title).join(",");
