@@ -14,7 +14,7 @@ golden *args:
 browser:
     python3 tests/browser.py
 
-# nix flake check: the unit tests and the packaged command
+# nix flake check: the unit tests (also on Python 3.11) and the packaged command
 check:
     nix flake check
 
