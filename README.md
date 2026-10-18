@@ -46,6 +46,34 @@ Filters: `--category NAME` (that category and what is nested in it),
 `--depth N`, `--categories-only`, `--wrap N` (categories per row in the
 hosts view; 0 for one row).
 
+### As a flake input
+
+To keep the command in your own flake (a dev shell, a NixOS or home-manager
+configuration), add it as an input that **follows your nixpkgs**, so it is
+built from the nixpkgs you already have instead of fetching a second one:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-module-graph = {
+      url = "github:NireBryce/flake-module-graph";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { nixpkgs, flake-module-graph, ... }: {
+    devShells.x86_64-linux.default = nixpkgs.legacyPackages.x86_64-linux.mkShell {
+      packages = [ flake-module-graph.packages.x86_64-linux.default ];   # `module-graph`
+    };
+  };
+}
+```
+
+Without the `follows` line it still works, with this repository's pinned
+nixpkgs. In a NixOS or home-manager module, the package is
+`flake-module-graph.packages.${pkgs.stdenv.hostPlatform.system}.default`.
+
 ## What it shows
 
 - **Categories** -- folders a host can include by name -- are blue rounded

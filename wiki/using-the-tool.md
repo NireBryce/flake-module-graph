@@ -65,7 +65,9 @@ a file first is useful when the flake needs `--override-input` or other
 `nix eval` options the tool doesn't pass.
 
 `module-graph` is `nix run github:NireBryce/flake-module-graph --` or, with
-the repository as a flake input, its `packages.<system>.default`.
+the repository as a flake input, its `packages.<system>.default`; the
+input should follow your nixpkgs
+([README: As a flake input](../README.md#as-a-flake-input)).
 
 ## The four views
 
