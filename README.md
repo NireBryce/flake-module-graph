@@ -121,6 +121,7 @@ behind  ->  hosts  ->  shared areas  <-  homes  ->  far
 
 ```sh
 nix flake check                 # unit tests, the packaged command
+just e2e                        # the packaged command on dirs-as-categories' published graph
 python3 -m unittest discover -s tests
 python3 tests/golden.py         # every view against tests/expected/golden/ (--update)
 python3 tests/browser.py        # the page in headless Chromium (chromium on PATH)
