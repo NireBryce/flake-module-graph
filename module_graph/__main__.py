@@ -77,6 +77,12 @@ def redraw_markdown(args, run):
     each --file, all from one read of the document."""
     if not args.file:
         raise ModuleGraphError('markdown needs --file FILE')
+    given = [flag for flag, on in (
+        ('--category', args.category is not None), ('--depth', args.depth is not None),
+        ('--categories-only', args.categories_only), ('--view', args.view != 'tree'),
+        ('--wrap', args.wrap != WRAP), ('-o', args.output is not None)) if on]
+    if given:
+        raise ModuleGraphError(f'markdown takes filters in each marker, not {", ".join(given)}')
     layout = load_layout(args.config) if args.config else Layout()
     model = graph(read(args, run))
 
@@ -87,9 +93,11 @@ def redraw_markdown(args, run):
     for name in args.file:
         path = pathlib.Path(name)
         try:
-            new, total, stale = markdown.rewrite(path.read_text(), draw)
-        except FileNotFoundError:
-            raise ModuleGraphError(f'{name}: no such file') from None
+            # newline='': read and write the file's own line endings
+            with open(path, newline='') as f:
+                new, total, stale = markdown.rewrite(f.read(), draw)
+        except (OSError, UnicodeDecodeError) as e:
+            raise unreadable(name, e) from None
         except ModuleGraphError as e:
             raise ModuleGraphError(f'{name}: {e}') from None
         if not stale:
@@ -99,7 +107,8 @@ def redraw_markdown(args, run):
                                f'{"is" if stale == 1 else "are"} stale; '
                                f'run `module-graph markdown --file {name}` to update them')
         else:
-            path.write_text(new)
+            with open(path, 'w', newline='') as f:
+                f.write(new)
             print(f'updated {name}: {plural(stale, "drawing")}')
     if stale_files:
         raise ModuleGraphError('\n'.join(stale_files))
@@ -129,6 +138,8 @@ def main(argv=None, run=subprocess.run):
     try:
         if args.cmd == 'markdown':
             return redraw_markdown(args, run)
+        if args.file or args.check:
+            raise ModuleGraphError('--file and --check are for `markdown`')
         text = draw(args, run)
         if args.cmd in ('tree', 'hosts'):
             for w in warnings(text):

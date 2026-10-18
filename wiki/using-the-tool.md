@@ -217,7 +217,9 @@ module-graph markdown --file README.md --check    # changes nothing; fails if an
 
 The document comes from the command as usual (the flake here, a file,
 `--flake REF`), and `--config` applies to every block; `--file` repeats for
-several files. `--check` in CI, or `lib.checkMarkdown` below, fails the
+several files. Filters go in each marker, not on the command line. Markers
+inside a fenced code block, like the one above, are examples and left
+alone, and a redrawn block keeps the file's line endings. `--check` in CI, or `lib.checkMarkdown` below, fails the
 build when someone changes the tree and forgets the docs.
 
 Mermaid refuses a diagram past its default limits -- 50,000 characters or
@@ -270,7 +272,8 @@ way, on `tests/fixtures/golden.json`.
 | `error: give a DOCUMENT (a file, or - for stdin) or --flake REF (no flake.nix here to read)` | nothing to draw, and no flake in the current directory to default to |
 | `error: graph.json: no such file` | the document (or `--config` file) isn't where the command says; likewise `Is a directory`, `Permission denied`, `not UTF-8 text`, and for `-o FILE` a folder that doesn't exist |
 | ``error: README.md: 1 of 2 drawings is stale; run `module-graph markdown --file README.md` to update them`` | `markdown --check` (or `lib.checkMarkdown`) found a block that no longer matches the tree |
-| ``error: README.md: line 3: no `<!-- /module-graph -->` after it`` | a marker without its closing marker; also an option a marker can't take, named on its line |
+| ``error: README.md: line 3: no `<!-- /module-graph -->` after it`` | a marker without its closing marker; also a second marker before the first closes, a closing marker with none open, and an option a marker can't take, each named by its line |
+| ``error: README.md: no `<!-- module-graph: … -->` blocks`` | `markdown --file` found nothing to draw -- often a marker spelled differently, such as `<!--module-graph:` |
 | `error: module-graph.toml: not TOML (…)` | the layout file has a syntax error; the parser's message says where |
 | `warning: this Mermaid diagram is … characters; Mermaid refuses more than 50000 by default …` | the drawing is still printed, but may not render; see [Putting a drawing in docs](#putting-a-drawing-in-docs) |
 | `error: no category 'nope'; categories: …` | `--category` named something that isn't a category |

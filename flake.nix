@@ -35,7 +35,9 @@
             # A document as Nix data (a flake's `moduleGraph`), as a file the
             # command reads: `$graphPath` in the build.
             withGraph = graph: { graph = builtins.toJSON graph; passAsFile = [ "graph" ]; };
-            configFlag = config: lib.optionalString (config != null) "--config ${config}";
+            # `config` is a path (./module-graph.toml), copied into the store
+            # for the build; a string path outside the store isn't visible there.
+            configFlag = config: lib.optionalString (config != null) "--config ${lib.escapeShellArg "${config}"}";
         in
         {
             packages = forAll (pkgs: rec {
@@ -55,7 +57,7 @@
             lib = {
                 # One drawing as a file: `view` is tree, hosts, dot or html;
                 # `args` are the filters (`[ "--depth" "1" ]`), `config` a
-                # layout file.
+                # layout file, as a path.
                 render = { pkgs, graph, view ? "html", args ? [ ], config ? null }:
                     pkgs.runCommand "module-graph-${view}"
                         (withGraph graph // { nativeBuildInputs = [ (mkModuleGraph pkgs) ]; }) ''

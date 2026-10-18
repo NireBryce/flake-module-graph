@@ -919,6 +919,49 @@ class Markdown(Tree):
                 self.cli('markdown', 'DOC', '--file', str(path))
             self.assertEqual(str(cm.exception), f'error: {path}: {needle}')
 
+    def test_markers_inside_a_code_block_are_examples_not_blocks(self):
+        # a README documenting the marker syntax must not rewrite itself
+        text = ('Put this where it goes:\n\n````markdown\n'
+                '<!-- module-graph: tree -->\n<!-- /module-graph -->\n````\n\n'
+                '~~~\n<!-- module-graph: hosts -->\n<!-- /module-graph -->\n~~~\n\n'
+                '<!-- module-graph: tree --categories-only -->\n<!-- /module-graph -->\n')
+        path = self.md(text)
+        rc, out = self.cli('markdown', 'DOC', '--file', str(path))
+        self.assertEqual(out, f'updated {path}: 1 drawing\n')
+        self.assertTrue(path.read_text().startswith(text.rsplit('<!-- module-graph: tree --cat', 1)[0]))
+
+    def test_trailing_whitespace_and_windows_line_endings(self):
+        text = '<!-- module-graph: tree -->  \r\nSTALE-DRAWING\r\n<!-- /module-graph --> \r\nend\r\n'
+        path = self.md('')
+        path.write_bytes(text.encode())
+        self.cli('markdown', 'DOC', '--file', str(path))
+        raw = path.read_bytes()
+        self.assertNotIn(b'STALE-DRAWING', raw)
+        self.assertEqual(raw.count(b'\n'), raw.count(b'\r\n'), 'line endings kept as CRLF')
+        self.assertEqual(self.cli('markdown', 'DOC', '--file', str(path), '--check')[0], 0)
+
+    def test_marker_mistakes_are_refused_not_swallowed(self):
+        cases = {
+            '<!-- module-graph: tree -->\n<!-- module-graph: hosts -->\n<!-- /module-graph -->\n':
+                'line 2: a second marker before line 1\'s is closed',
+            'text\n<!-- /module-graph -->\n': 'line 2: `<!-- /module-graph -->` with no marker open',
+            '<!-- module-graph: tree --category "base -->\n<!-- /module-graph -->\n':
+                'line 1: No closing quotation',
+            '# no drawings here\n<!--module-graph: tree-->\n':
+                'no `<!-- module-graph: … -->` blocks',
+        }
+        for text, needle in cases.items():
+            path = self.md(text)
+            with self.subTest(text), self.assertRaises(SystemExit) as cm:
+                self.cli('markdown', 'DOC', '--file', str(path))
+            self.assertEqual(str(cm.exception), f'error: {path}: {needle}')
+
+    def test_filters_on_the_markdown_command_line_are_refused(self):
+        path = self.md(self.STALE)
+        with self.assertRaises(SystemExit) as cm:
+            self.cli('markdown', 'DOC', '--file', str(path), '--depth', '1')
+        self.assertEqual(str(cm.exception), 'error: markdown takes filters in each marker, not --depth')
+
     def test_markdown_needs_a_file(self):
         with self.assertRaises(SystemExit) as cm:
             self.cli('markdown', 'DOC')
