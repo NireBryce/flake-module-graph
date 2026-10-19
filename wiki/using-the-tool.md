@@ -1,13 +1,14 @@
 # Using the tool
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-18_
 
 How to draw a flake's modules tree: getting a document, the four views,
 where areas go, what the drawings mean, the interactive page, and what each
 error means. Every command here was run against the example below.
 
-**flake-module-graph is experimental** and may change without notice; read
-the [README](../README.md)'s notice before relying on it.
+**flake-module-graph is experimental, a work in progress, and heavily
+LLM-aided**, and may change without notice; read the
+[README](../README.md)'s notice before relying on it.
 
 ## Contents
 

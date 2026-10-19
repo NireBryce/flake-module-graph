@@ -1,7 +1,7 @@
 # Changelog
 
 What changed for someone using flake-module-graph, newest first. The project
-is **experimental**: any release may break the command line, the layout
+is **experimental** and heavily LLM-aided (README): any release may break the command line, the layout
 file, the drawings or the page, and each entry's **Breaks** says how.
 
 Every change a user can see adds a line under **Unreleased** in the same
@@ -11,7 +11,9 @@ breaks something bumps MINOR.
 
 ## Unreleased
 
-The first release, 0.1.0. It reads module-graph documents of format
+## 0.1.0 -- 2026-10-18
+
+The first release. It reads module-graph documents of format
 version 1 (dirs-as-categories' `doc/format.md`).
 
 - Four views: `tree` and `hosts` (Mermaid), `dot` (Graphviz, either view),

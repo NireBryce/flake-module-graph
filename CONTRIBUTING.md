@@ -1,8 +1,10 @@
 # Contributing
 
-flake-module-graph is **experimental** (see the README's notice), so a
-change may break what users rely on -- that's allowed, but say so: in the
-PR, and under **Breaks** in `CHANGELOG.md`.
+flake-module-graph is **experimental and heavily LLM-aided** (see the
+README's notice), so a change may break what users rely on -- that's
+allowed, but say so: in the PR, and under **Breaks** in `CHANGELOG.md`.
+Changes written with an LLM are welcome under the same rules as any
+other: a test that failed first, and the checks below passing.
 
 ## Getting set up
 
