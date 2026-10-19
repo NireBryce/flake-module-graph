@@ -18,8 +18,9 @@ format.
 
 ## Hard rules
 
-- **This project is experimental.** Never describe it as stable or
-  production-ready; keep the README's notice and the pointers to it in the
+- **This project is experimental, a work in progress, and heavily
+  LLM-aided.** Never describe it as stable or production-ready, nor as
+  hand-written; keep the README's notice and the pointers to it in the
   wiki. Say what a change breaks for users, since nothing here promises
   compatibility yet.
 - **"push" means skill `ship`**: branch, PR, green CI, one confirmation

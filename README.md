@@ -1,11 +1,18 @@
 # flake-module-graph
 
-> **Experimental. Don't use this unless you know what you're doing.** It is
-> young, and everything here may change without notice: the commands and
-> flags, the layout file, what the drawings and the page show, and the
-> document format it reads (dirs-as-categories' `flake.moduleGraph`, itself
-> experimental). If you use it anyway, pin a revision and check its output
-> after updating.
+> [!WARNING]
+> **Experimental, very much a work in progress, and heavily LLM-aided.
+> Don't use this unless you know what you're doing.**
+>
+> - **Work in progress.** Everything here may change without notice: the
+>   commands and flags, the layout file, what the drawings and the page
+>   show, and the document format it reads (dirs-as-categories'
+>   `flake.moduleGraph`, itself experimental).
+> - **LLM-aided.** Most of the code, tests and docs were written by an LLM
+>   coding agent (Claude), directed by the author. Read it, and check what
+>   it draws, as you would any code you didn't write.
+> - **If you use it anyway**, pin a release tag or a revision, and check its
+>   output after updating.
 
 Draws a flake's modules tree: which categories exist, what sits in them, and
 which host includes what. Mermaid and Graphviz diagrams, and an interactive

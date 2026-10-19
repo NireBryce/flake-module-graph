@@ -1,9 +1,10 @@
 # Wiki
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-18_
 
-Guides for using and changing flake-module-graph, which is **experimental**:
-read the [README](../README.md)'s notice before relying on it. The document
+Guides for using and changing flake-module-graph, which is **experimental,
+a work in progress, and heavily LLM-aided**: read the
+[README](../README.md)'s notice before relying on it. The document
 format is
 [dirs-as-categories' `doc/format.md`](https://github.com/NireBryce/dirs-as-categories/blob/main/doc/format.md).
 
