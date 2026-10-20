@@ -114,6 +114,7 @@ to both repositories.
 | `release` | a version, its changelog, tag and GitHub release |
 | `use-a-worktree` | branching work in isolation |
 | `review` | reviewing a change here |
+| `audit` | auditing the whole tree for side-effects and security |
 | `docs-sync` | keeping docs true in the same change |
 | `fact-hygiene` | facts, dates and cross-references that stay true |
 | `investigate-bug` | a reported bug, to a failing test |
