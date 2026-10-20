@@ -1,0 +1,22 @@
+digraph modules {
+    rankdir=TB; bgcolor="white"; nodesep=0.22; ranksep=0.3; splines=true; newrank=true; compound=true;
+    node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=11 fontcolor="#1e293b" penwidth=1.3 margin="0.16,0.08"];
+    edge [color="#94a3b8" fontname="Helvetica" fontsize=9 fontcolor="#64748b" arrowsize=0.7];
+    subgraph cluster_0 {
+        label=<<font color="#64748b" point-size="10">area</font>>;
+        style="rounded,filled"; fillcolor="#f8fafc"; color="#cbd5e1"; penwidth=1.2; margin=14;
+        subgraph cluster_1 {
+            label=<<b>top&lt;img&gt;/</b>  <font point-size="9" color="#64748b">n h · 2</font>>;
+            style="rounded,filled"; fillcolor="#eff6ff"; color="#2563eb"; penwidth=1.2; margin=14;
+            n5 [label=<<b>deep/</b><br/><font point-size="9" color="#64748b">0</font>> fillcolor="#dbeafe" color="#2563eb"];
+            n6 [label=<<b>café</b><br/><font point-size="9" color="#64748b">h</font>> fillcolor="#ffffff" color="#94a3b8" shape=box style="rounded,filled"];
+            n7 [label=<<b>m&lt;/script&gt;</b><br/><font point-size="9" color="#64748b">n</font>> fillcolor="#ffffff" color="#94a3b8" shape=box style="rounded,filled"];
+        }
+    }
+    subgraph cluster_2 {
+        label=<<font color="#64748b" point-size="10">hosts</font>>;
+        style="rounded,filled"; fillcolor="#f8fafc"; color="#cbd5e1"; penwidth=1.2; margin=14;
+        n3 [label=<<b>50%</b><br/><font point-size="9" color="#64748b">n</font>> fillcolor="#ffffff" color="#94a3b8" shape=box style="rounded,filled"];
+        n4 [label=<<b>h&quot;ome</b><br/><font point-size="9" color="#64748b">h</font>> fillcolor="#ffffff" color="#94a3b8" shape=box style="rounded,filled"];
+    }
+}

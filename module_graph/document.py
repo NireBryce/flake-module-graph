@@ -20,21 +20,34 @@ def fail(msg):
 def check(doc):
     if not isinstance(doc, dict):
         fail('expected a JSON object')
-    if doc.get('version') != VERSION:
-        fail(f'version {doc.get("version")!r}; this tool reads version {VERSION}')
+    version = doc.get('version')
+    if not isinstance(version, int) or isinstance(version, bool) or version != VERSION:
+        fail(f'version {version!r}; this tool reads version {VERSION}')
     for key in ('categories', 'modules'):
         if not isinstance(doc.get(key), dict):
             fail(f'`{key}` must be an object')
+    dirs = {}
     for name, c in doc['categories'].items():
         if not isinstance(c, dict) or not isinstance(c.get('dir'), str):
             fail(f'categories.{name}: needs a string `dir`')
+        if c['dir'] in dirs:
+            fail(f"categories.{name}: dir {c['dir']!r} is already categories.{dirs[c['dir']]}'s")
+        dirs[c['dir']] = name
+    paths = {}
     for name, m in doc['modules'].items():
         if not (isinstance(m, dict) and isinstance(m.get('path'), str)
                 and isinstance(m.get('classes'), list)):
             fail(f'modules.{name}: needs a string `path` and a list `classes`')
+        if not all(isinstance(c, str) for c in m['classes']):
+            fail(f'modules.{name}: `classes` must hold strings')
+        if m['path'] in paths:
+            fail(f"modules.{name}: path {m['path']!r} is already modules.{paths[m['path']]}'s")
+        paths[m['path']] = name
     for key in ('includes', 'enables'):
         for name, per in (doc.get(key) or {}).items():
-            if not (isinstance(per, dict) and all(isinstance(v, list) for v in per.values())):
+            if not (isinstance(per, dict) and all(isinstance(v, list)
+                                                  and all(isinstance(n, str) for n in v)
+                                                  for v in per.values())):
                 fail(f'{key}.{name}: must map classes to lists of names')
     return doc
 
@@ -82,7 +95,8 @@ def from_flake(ref, run=subprocess.run):
     if '#' not in ref:
         ref += '#moduleGraph'
     try:
-        r = run([*NIX, 'eval', '--json', ref], capture_output=True, text=True)
+        r = run([*NIX, 'eval', '--json', ref], capture_output=True, text=True,
+                encoding='utf-8', errors='replace')
     except FileNotFoundError:
         fail('nix is not installed')
     if r.returncode:

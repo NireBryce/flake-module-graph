@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "classes": ["nixos", "homeManager"],
+  "categories": {
+    "top<img>": {"dir": "area/top<img>"},
+    "deep": {"dir": "area/top<img>/deep"}
+  },
+  "modules": {
+    "m</script>": {"path": "area/top<img>/m.nix", "classes": ["nixos"]},
+    "café": {"path": "area/top<img>/café.nix", "classes": ["homeManager"]},
+    "50%": {"path": "hosts/50%.nix", "classes": ["nixos"]},
+    "h\"ome": {"path": "hosts/home.nix", "classes": ["homeManager"]}
+  },
+  "includes": {
+    "50%": {"nixos": ["top<img>", "deep", "ghost<script>"]},
+    "h\"ome": {"homeManager": ["deep"]}
+  },
+  "enables": {
+    "m</script>": {"homeManager": ["h\"ome"]}
+  }
+}

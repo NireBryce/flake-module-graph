@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from module_graph import Layout, document, graph, load_layout, page, select  # noqa: E402
 
 CASES = ['', 'hosts=alpha-host', 'hosts=beta-host', 'hosts=home', 'hosts=alpha-host,beta-host',
-         'hosts=nope']
+         'hosts=nope', 'hosts=%']
 CASES += [f'{c}&layout=lr' if c else 'layout=lr' for c in CASES]
 TESTS = ROOT / 'tests'
 PAGES = {   # name -> (document, layout file or None, URL fragments, expected)
@@ -27,6 +27,10 @@ PAGES = {   # name -> (document, layout file or None, URL fragments, expected)
                 TESTS / 'expected' / 'browser.json'),
     'example': (TESTS / 'fixtures' / 'example.json', None, ['', 'hosts=laptop', 'hosts=me-home'],
                 TESTS / 'expected' / 'browser-example.json'),
+    # names with markup, quotes and % in them: the page shows them as text,
+    # selects one through its percent-encoded hash, and survives a broken one
+    'hostile': (TESTS / 'fixtures' / 'hostile.json', None, ['', 'hosts=50%25', 'hosts=%'],
+                TESTS / 'expected' / 'browser-hostile.json'),
 }
 
 
@@ -51,10 +55,10 @@ def body(exe, url):
 
 def shown(exe, fixture, layout, cases):
     """{case: what the page shows} for one document."""
-    g = select(graph(document.loads(fixture.read_text())), 'hosts')
+    g = select(graph(document.loads(fixture.read_text(encoding='utf-8'))), 'hosts')
     with tempfile.TemporaryDirectory() as tmp:
         html = pathlib.Path(tmp) / 'page.html'
-        html.write_text(page(g, load_layout(layout) if layout else Layout()))
+        html.write_text(page(g, load_layout(layout) if layout else Layout()), encoding='utf-8')
         return {case: body(exe, f'file://{html}' + (f'#{case}' if case else '')) for case in cases}
 
 
@@ -62,13 +66,13 @@ def main(argv):
     exe, failed = browser(), False
     for name, (fixture, layout, cases, expected) in PAGES.items():
         got = shown(exe, fixture, layout, cases)
-        want = json.loads(expected.read_text()) if expected.exists() else {}
+        want = json.loads(expected.read_text(encoding='utf-8')) if expected.exists() else {}
         bad = [c for c in cases if got[c] != want.get(c)]
         if '--update' in argv:
             # what moved, so it can be checked by hand against the fixture
             for c in bad:
                 print(f'{name}  #{c:32} {want.get(c)} -> {got[c]}')
-            expected.write_text(json.dumps(got, indent=2) + '\n')
+            expected.write_text(json.dumps(got, indent=2) + '\n', encoding='utf-8')
             print(f'wrote {expected.relative_to(ROOT)}: {len(bad)} of {len(cases)} cases changed')
             continue
         for c in cases:

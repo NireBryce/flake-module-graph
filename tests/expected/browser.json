@@ -29,6 +29,11 @@
     "visible": "7",
     "edges": "7"
   },
+  "hosts=%": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  },
   "layout=lr": {
     "selected": "",
     "visible": "7",
@@ -55,6 +60,11 @@
     "edges": "7"
   },
   "hosts=nope&layout=lr": {
+    "selected": "",
+    "visible": "7",
+    "edges": "7"
+  },
+  "hosts=%&layout=lr": {
     "selected": "",
     "visible": "7",
     "edges": "7"
