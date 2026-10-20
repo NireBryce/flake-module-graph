@@ -85,11 +85,13 @@ def page_data(g, layout=Layout()):
 
 
 def page(g, layout=Layout(), template=None):
-    """The template with the model filled in. `</` is escaped so no name in
-    the data can end the <script> element it sits in."""
+    """The template with the model filled in. Every `<` in the data is
+    escaped, so no name in it can carry markup or end the <script> element
+    it sits in -- not even by the `<!--` ... `<script` path through the
+    HTML parser, where the template's own </script> would stop closing it."""
     template = template or TEMPLATE
-    data = json.dumps(page_data(g, layout), separators=(',', ':')).replace('</', '<\\/')
-    text = pathlib.Path(template).read_text()
+    data = json.dumps(page_data(g, layout), separators=(',', ':')).replace('<', '\\u003c')
+    text = pathlib.Path(template).read_text(encoding='utf-8')
     if text.count(PLACEHOLDER) != 1:
         raise ModuleGraphError(f'{template} must hold {PLACEHOLDER} exactly once')
     return text.replace(PLACEHOLDER, data)

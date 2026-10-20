@@ -11,6 +11,15 @@ breaks something bumps MINOR.
 
 ## Unreleased
 
+- A name holding markup is drawn as text: Mermaid labels carry `<`, `>` and
+  `"` in Mermaid's entity form, so a viewer cannot read a name as tags.
+- The `html` page survives input it could not: a name holding `<!--<script`
+  no longer stops the page's script from running, and a URL hash with a
+  broken `%` escape no longer blanks it.
+- A document that would be misdrawn is refused with `error:` and a reason:
+  a `version` that is not the number 1, a list entry that is not a name,
+  or two modules with one `path` (two categories with one `dir`).
+
 ## 0.1.0 -- 2026-10-18
 
 The first release. It reads module-graph documents of format

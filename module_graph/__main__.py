@@ -49,7 +49,7 @@ def read(args, run):
     if args.document == '-':
         return document.loads(sys.stdin.read())
     try:
-        text = pathlib.Path(args.document).read_text()
+        text = pathlib.Path(args.document).read_text(encoding='utf-8')
     except (OSError, UnicodeDecodeError) as e:
         raise unreadable(args.document, e) from None
     return document.loads(text)
@@ -94,7 +94,7 @@ def redraw_markdown(args, run):
         path = pathlib.Path(name)
         try:
             # newline='': read and write the file's own line endings
-            with open(path, newline='') as f:
+            with open(path, encoding='utf-8', newline='') as f:
                 new, total, stale = markdown.rewrite(f.read(), draw)
         except (OSError, UnicodeDecodeError) as e:
             raise unreadable(name, e) from None
@@ -107,7 +107,7 @@ def redraw_markdown(args, run):
                                f'{"is" if stale == 1 else "are"} stale; '
                                f'run `module-graph markdown --file {name}` to update them')
         else:
-            with open(path, 'w', newline='') as f:
+            with open(path, 'w', encoding='utf-8', newline='') as f:
                 f.write(new)
             print(f'updated {name}: {plural(stale, "drawing")}')
     if stale_files:
@@ -148,7 +148,7 @@ def main(argv=None, run=subprocess.run):
         # written only now, so a failure leaves no empty or half-written file
         if args.output:
             try:
-                pathlib.Path(args.output).write_text(text + '\n')
+                pathlib.Path(args.output).write_text(text + '\n', encoding='utf-8')
             except OSError as e:
                 raise unreadable(args.output, e) from None
         else:

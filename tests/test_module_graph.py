@@ -536,14 +536,23 @@ class Documents(Tree):
 
     def test_a_wrong_document_is_refused_with_a_reason(self):
         good = self.d.build()
-        cases = {
-            'version 2': {**good, 'version': 2},
-            '`modules` must be an object': {**good, 'modules': []},
-            'categories.x: needs a string `dir`': {**good, 'categories': {'x': {}}},
-            'modules.m: needs a string `path`': {**good, 'modules': {'m': {'path': 'm.nix'}}},
-            'includes.h: must map classes': {**good, 'includes': {'h': ['used']}},
-        }
-        for needle, doc in cases.items():
+        two = {'a': {'path': 'x/n.nix', 'classes': ['nixos']},
+               'b': {'path': 'x/n.nix', 'classes': ['nixos']}}
+        cases = [
+            ('version 2', {**good, 'version': 2}),
+            ('version True', {**good, 'version': True}),
+            ('`modules` must be an object', {**good, 'modules': []}),
+            ('categories.x: needs a string `dir`', {**good, 'categories': {'x': {}}}),
+            ("categories.b: dir 'x' is already categories.a's",
+             {**good, 'categories': {'a': {'dir': 'x'}, 'b': {'dir': 'x'}}}),
+            ('modules.m: needs a string `path`', {**good, 'modules': {'m': {'path': 'm.nix'}}}),
+            ('modules.m: `classes` must hold strings',
+             {**good, 'modules': {'m': {'path': 'm.nix', 'classes': ['nixos', []]}}}),
+            ("modules.b: path 'x/n.nix' is already modules.a's", {**good, 'modules': two}),
+            ('includes.h: must map classes', {**good, 'includes': {'h': ['used']}}),
+            ('includes.h: must map classes', {**good, 'includes': {'h': {'nixos': ['used', 1]}}}),
+        ]
+        for needle, doc in cases:
             with self.assertRaises(ModuleGraphError) as cm:
                 document.loads(json.dumps(doc))
             self.assertIn(needle, str(cm.exception))
@@ -755,8 +764,21 @@ class Page(Tree):
         out = pg.page(g)
         script = out[out.index('const DATA'):]
         self.assertNotIn('</script><b>', script.split('\n')[0])
-        self.assertIn('<\\/script><b>', out)
+        self.assertIn('\\u003c/script>', out)
         self.assertEqual(out.count('</script>'), 1)          # only the template's own
+
+    def test_data_cannot_trap_the_html_parser(self):
+        # `<!--` followed by `<script` in the data puts the HTML parser in
+        # the double-escaped state, where the template's own </script> no
+        # longer closes the element and the page's script never runs
+        g = Graph({'area:x': Node('area:x', 'area', 'x'),
+                   'cat:x/t': Node('cat:x/t', 'category', '<!--<script'),
+                   'agg:h:nixos': Node('agg:h:nixos', 'aggregate', 'h', frozenset(['nixos']))},
+                  [Edge('area:x', 'cat:x/t', 'contains'),
+                   Edge('agg:h:nixos', 'cat:x/t', 'imports', 'nixos')], [])
+        data = next(l for l in pg.page(g).splitlines() if l.startswith('const DATA'))
+        self.assertNotIn('<!--', data)
+        self.assertNotIn('<script', data)
 
     def test_a_template_without_one_placeholder_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -891,6 +913,16 @@ class Rendering(Tree):
         self.assertIn('label=<<b>sub/</b><br/><font', out)    # HTML label
         self.assertIn('label=<<b>used/</b>  <font', out)     # a box's title
         self.assertNotIn('[style=dotted]', out)       # used -> sub is the box, not an arrow
+
+    def test_names_carry_no_markup_into_the_drawings(self):
+        # a name is label text, not markup: neither renderer may hand it to
+        # Mermaid's HTML labels or Graphviz's HTML-like ones as tags
+        self.d.category('area/<img src=x>')
+        self.d.module('area/<img src=x>/b.nix', 'nixos')
+        g = select(self.g(), 'tree')
+        self.assertIn('#60;img', mermaid(g))
+        self.assertNotIn('<img', mermaid(g))
+        self.assertNotIn('<img', dot(g))
 
     def test_cli_prints_mermaid(self):
         rc, out = self.cli('tree', 'DOC', '--categories-only')

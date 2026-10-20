@@ -42,7 +42,9 @@ def warnings(text):
 
 
 def esc(text):
-    return text.replace('"', '#quot;')
+    """A name or subtitle as Mermaid label text: its markup and quotes in
+    Mermaid's `#nn;` entity form, so a name can carry no HTML of its own."""
+    return text.replace('<', '#60;').replace('>', '#62;').replace('"', '#quot;')
 
 
 def mermaid(g, wrap=WRAP, layout=Layout()):
@@ -54,8 +56,8 @@ def mermaid(g, wrap=WRAP, layout=Layout()):
     def card(i):
         n = g.nodes[i]
         title, sub = parts(n)
-        text = f'<b>{title}</b>' + (f'<br/><i>{sub}</i>' if sub else '')
-        return f'{card_id[i]}{SHAPE[n.kind].format(chr(34) + esc(text) + chr(34))}'
+        text = f'<b>{esc(title)}</b>' + (f'<br/><i>{esc(sub)}</i>' if sub else '')
+        return f'{card_id[i]}{SHAPE[n.kind].format(chr(34) + text + chr(34))}'
 
     def container(b, pad):
         """A box as a `subgraph`, its cards and nested boxes inside."""
@@ -64,15 +66,15 @@ def mermaid(g, wrap=WRAP, layout=Layout()):
         name = box_id[b.id] = f'g{len(box_id)}'
         if b.kind == 'category':
             title, sub = parts(g.nodes[b.id])
-            text = f'<b>{title}</b>' + (f' · <i>{sub}</i>' if sub else '')
+            text = f'<b>{esc(title)}</b>' + (f' · <i>{esc(sub)}</i>' if sub else '')
         else:
-            text = g.nodes[b.id].label if b.kind == 'area' else 'hosts and home'
+            text = esc(g.nodes[b.id].label) if b.kind == 'area' else 'hosts and home'
         fill, line, dashed, alert = box_look(g, b)
         box_styles.append(f'    style {name} fill:{fill},stroke:{line},'
                           f'color:{INK if b.kind == "category" else QUIET}'
                           + (',stroke-width:2.5px' if alert else '')
                           + (',stroke-dasharray:5 3' if dashed else ''))
-        out = [f'{pad}subgraph {name}["{esc(text)}"]']
+        out = [f'{pad}subgraph {name}["{text}"]']
         out += [f'{pad}    {card(m)}' for m in b.items]
         for s in b.subs:
             out += container(s, pad + '    ')

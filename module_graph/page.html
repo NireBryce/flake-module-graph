@@ -370,7 +370,13 @@ function readHash() {
   setLayout(/(^#|&)layout=lr(&|$)/.test(location.hash));
   const m = location.hash.match(/hosts=([^&]*)/);
   if (!m) return;
-  for (const title of decodeURIComponent(m[1]).split(",")) {
+  for (const piece of m[1].split(",")) {
+    let title;
+    try {
+      title = decodeURIComponent(piece);
+    } catch {
+      title = piece;                        // a broken escape is just a name
+    }
     const id = sourceByTitle.get(title);
     if (id) selected.add(id);
   }
