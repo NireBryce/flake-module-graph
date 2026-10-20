@@ -27,6 +27,10 @@ PAGES = {   # name -> (document, layout file or None, URL fragments, expected)
                 TESTS / 'expected' / 'browser.json'),
     'example': (TESTS / 'fixtures' / 'example.json', None, ['', 'hosts=laptop', 'hosts=me-home'],
                 TESTS / 'expected' / 'browser-example.json'),
+    # names with markup, quotes and % in them: the page shows them as text,
+    # selects one through its percent-encoded hash, and survives a broken one
+    'hostile': (TESTS / 'fixtures' / 'hostile.json', None, ['', 'hosts=50%25', 'hosts=%'],
+                TESTS / 'expected' / 'browser-hostile.json'),
 }
 
 

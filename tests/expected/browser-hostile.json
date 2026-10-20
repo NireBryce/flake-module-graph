@@ -1,0 +1,17 @@
+{
+  "": {
+    "selected": "",
+    "visible": "3",
+    "edges": "5"
+  },
+  "hosts=50%25": {
+    "selected": "50%",
+    "visible": "3",
+    "edges": "5"
+  },
+  "hosts=%": {
+    "selected": "",
+    "visible": "3",
+    "edges": "5"
+  }
+}

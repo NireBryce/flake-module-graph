@@ -1,0 +1,129 @@
+{
+ "areas": [
+  {
+   "id": "area:area",
+   "kind": "area",
+   "title": "area",
+   "sub": "",
+   "children": [
+    {
+     "id": "cat:area/top<img>",
+     "kind": "category",
+     "title": "top<img>/",
+     "sub": "n h \u00b7 2",
+     "status": "imported",
+     "look": {
+      "fill": "#eff6ff",
+      "line": "#2563eb",
+      "alert": false,
+      "dashed": false
+     },
+     "children": [
+      {
+       "id": "cat:area/top<img>/deep",
+       "kind": "category",
+       "title": "deep/",
+       "sub": "0",
+       "status": "imported",
+       "look": {
+        "fill": "#dbeafe",
+        "line": "#2563eb",
+        "alert": false,
+        "dashed": false
+       }
+      }
+     ]
+    }
+   ],
+   "place": "shared"
+  },
+  {
+   "id": "area:(not found)",
+   "kind": "area",
+   "title": "not found",
+   "sub": "",
+   "place": "shared",
+   "children": [
+    {
+     "id": "missing:ghost<script>",
+     "kind": "missing",
+     "title": "ghost<script>",
+     "sub": "no such module",
+     "look": {
+      "fill": "#fee2e2",
+      "line": "#ef4444",
+      "alert": false,
+      "dashed": false
+     }
+    }
+   ]
+  }
+ ],
+ "hosts": [
+  {
+   "id": "agg:hosts/50%.nix:nixos",
+   "title": "50%",
+   "sub": "nixos",
+   "hue": "#16a34a",
+   "mark": "1"
+  }
+ ],
+ "homes": [
+  {
+   "id": "agg:hosts/home.nix:homeManager",
+   "title": "h\"ome",
+   "sub": "homeManager",
+   "hue": "#d97706",
+   "mark": "2"
+  }
+ ],
+ "imports": {
+  "agg:hosts/50%.nix:nixos": [
+   "cat:area/top<img>",
+   "cat:area/top<img>/deep",
+   "missing:ghost<script>"
+  ],
+  "agg:hosts/home.nix:homeManager": [
+   "cat:area/top<img>/deep"
+  ]
+ },
+ "enables": {
+  "agg:hosts/50%.nix:nixos": [
+   "agg:hosts/home.nix:homeManager"
+  ],
+  "agg:hosts/home.nix:homeManager": []
+ },
+ "style": {
+  "palette": {
+   "area": [
+    "#f8fafc",
+    "#cbd5e1"
+   ],
+   "category": [
+    "#dbeafe",
+    "#2563eb"
+   ],
+   "folder": [
+    "#f1f5f9",
+    "#94a3b8"
+   ],
+   "module": [
+    "#ffffff",
+    "#94a3b8"
+   ],
+   "aggregate": [
+    "#ffffff",
+    "#f59e0b"
+   ],
+   "missing": [
+    "#fee2e2",
+    "#ef4444"
+   ]
+  },
+  "alert": [
+   "#fff1f2",
+   "#e11d48"
+  ],
+  "boxFill": "#eff6ff"
+ }
+}

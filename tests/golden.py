@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Saved outputs: every view of tests/fixtures/golden.json, as the command
-prints it, kept in tests/expected/golden/. The unit tests compare against
-them, so a change meant to change nothing (a refactor, a rename) is checked
-byte for byte, and a change meant to change the drawing shows exactly what
-moved in `git diff`.
+"""Saved outputs: every view of two fixtures, as the command prints it,
+kept in tests/expected/golden/. The unit tests compare against them, so a
+change meant to change nothing (a refactor, a rename) is checked byte for
+byte, and a change meant to change the drawing shows exactly what moved in
+`git diff`.
 
     python3 tests/golden.py             # compare; prints what differs
     python3 tests/golden.py --update    # rewrite the saved outputs
 
-The fixture has one of everything the drawings distinguish: a nested
+golden.json has one of everything the drawings distinguish: a nested
 category, a plain folder holding a category, a category reached only through
 a module named on its own, one nothing reaches, a name no module declares,
 a host enabling a home configuration, areas above the hosts, and enough
-shared categories to wrap. The html case keeps only the data the page is
-given, indented so a diff reads: the rest is page.html, already in git.
+shared categories to wrap. hostile.json has names that must never reach a
+renderer as markup or quotes -- `<img>`, `</script>`, `"` and `%` -- and
+non-ASCII; its saved drawings are the escaping contracts. The html case
+keeps only the data the page is given, indented so a diff reads: the rest
+is page.html, already in git.
 """
 import contextlib, difflib, io, json, pathlib, sys
 
@@ -22,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 from module_graph.__main__ import main  # noqa: E402
 
 FIXTURE = 'tests/fixtures/golden.json'
+HOSTILE = 'tests/fixtures/hostile.json'
 CONFIG = ['--config', 'tests/fixtures/golden.toml']
 SAVED = ROOT / 'tests' / 'expected' / 'golden'
 CASES = {                                   # file name -> command line
@@ -37,6 +41,10 @@ CASES = {                                   # file name -> command line
     'hosts.dot':                ['dot', FIXTURE, '--view', 'hosts', *CONFIG],
     'page-data.json':           ['html', FIXTURE, *CONFIG],
     'page-data-base.json':      ['html', FIXTURE, *CONFIG, '--category', 'base'],
+    'hostile-tree.mmd':         ['tree', HOSTILE],
+    'hostile-hosts.mmd':        ['hosts', HOSTILE],
+    'hostile-tree.dot':         ['dot', HOSTILE],
+    'hostile-page-data.json':   ['html', HOSTILE],
 }
 
 

@@ -1,0 +1,36 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart TB
+    subgraph g0["area"]
+        subgraph g1["<b>top#60;img#62;/</b> · <i>n h · 2</i>"]
+            n1("<b>deep/</b><br/><i>0</i>")
+        end
+    end
+    subgraph g2["hosts and home"]
+        n4[["<b>50%</b><br/><i>nixos</i>"]]
+        n6[["<b>h#quot;ome</b><br/><i>homeManager</i>"]]
+    end
+    n5{{"<b>ghost#60;script#62;</b><br/><i>no such module</i>"}}
+    n4 --> g1
+    n4 --> n1
+    n4 --> n5
+    n6 --> n1
+    n4 -. enables .-> n6
+    n4 ~~~ n1
+    linkStyle 0,1,2,4 stroke:#16a34a,stroke-width:1.5px
+    linkStyle 3 stroke:#d97706,stroke-width:1.5px
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    style g2 fill:#fefce8,stroke:#fde68a,color:#64748b
+    style n4 stroke:#16a34a,stroke-width:2px
+    style n6 stroke:#d97706,stroke-width:2px
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n1 category
+    class n4,n6 aggregate
+    class n5 missing

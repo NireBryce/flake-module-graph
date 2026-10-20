@@ -1,0 +1,26 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "ui-sans-serif, system-ui, sans-serif", "fontSize": "14px", "lineColor": "#94a3b8"}, "flowchart": {"curve": "basis", "nodeSpacing": 24, "rankSpacing": 80, "padding": 14}}}%%
+flowchart LR
+    subgraph g0["hosts"]
+        n3(["<b>50%</b><br/><i>n</i>"])
+        n4(["<b>h#quot;ome</b><br/><i>h</i>"])
+    end
+    subgraph g1["area"]
+        subgraph g2["<b>top#60;img#62;/</b> · <i>n h · 2</i>"]
+            n5("<b>deep/</b><br/><i>0</i>")
+            n6(["<b>café</b><br/><i>h</i>"])
+            n7(["<b>m#60;/script#62;</b><br/><i>n</i>"])
+        end
+    end
+    style g0 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g1 fill:#f8fafc,stroke:#cbd5e1,color:#64748b
+    style g2 fill:#eff6ff,stroke:#2563eb,color:#1e293b
+    classDef area fill:#f8fafc,stroke:#cbd5e1,color:#1e293b,stroke-width:1.5px
+    classDef category fill:#dbeafe,stroke:#2563eb,color:#1e293b,stroke-width:1.5px
+    classDef folder fill:#f1f5f9,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef module fill:#ffffff,stroke:#94a3b8,color:#1e293b,stroke-width:1.5px
+    classDef aggregate fill:#ffffff,stroke:#f59e0b,color:#1e293b,stroke-width:1.5px
+    classDef missing fill:#fee2e2,stroke:#ef4444,color:#1e293b,stroke-width:1.5px
+    classDef orphan fill:#fff1f2,stroke:#e11d48,color:#1e293b,stroke-width:2.5px
+    classDef bymodule stroke-dasharray:5 3
+    class n3,n4,n6,n7 module
+    class n5 category
