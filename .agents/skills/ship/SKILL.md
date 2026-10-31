@@ -79,11 +79,24 @@ combined question. No: leave the PR open, say so, stop.
 
 ## 3. Merge, then delete -- on yes only
 
+Before merging or deleting anything, read the PR's own facts and use them;
+never type a branch name from memory:
+
 ```sh
-gh pr merge <n> --rebase      # one commit; --merge for several (keeps each message)
+gh pr view <n> --json isCrossRepository,headRefName,headRefOid,baseRefName
+```
+
+Stop and tell the user, merging and deleting nothing, if `isCrossRepository`
+is true, if `headRefName` is `main`, `master` or the repo's default branch, or
+if `headRefName` equals `baseRefName`. Those would aim the delete at a branch
+that is not the PR's own topic branch. Merge with `--match-head-commit
+<headRefOid>`, and delete only `headRefName`.
+
+```sh
+gh pr merge <n> --rebase --match-head-commit <headRefOid>   # one commit; --merge for several (keeps each message)
 git switch main && git pull --ff-only
-git branch -d feat/<thing>
-git push origin --delete feat/<thing>
+git branch -d <headRefName>
+git push origin --delete <headRefName>
 ```
 
 Not `gh pr merge --delete-branch`: it removes only the remote branch.
